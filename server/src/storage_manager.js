@@ -18,6 +18,7 @@ class StorageManager {
   loadConfig() {
     let cfg = {
       storage_type: 'local', // 'local' or 'cloud'
+      local_storage_path: LOCAL_STORAGE_DIR, // Custom path chosen by admin
       cloud_storage_url: '', // e.g. https://my-bucket.s3.amazonaws.com or custom cloud API
       database_url: '',      // e.g. postgres://... or mongodb+srv://...
       retention_days: 20     // Auto-delete older than 15-20 days
@@ -34,7 +35,12 @@ class StorageManager {
       fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8');
     }
 
+    if (!cfg.local_storage_path || cfg.local_storage_path.trim() === '') {
+      cfg.local_storage_path = LOCAL_STORAGE_DIR;
+    }
+
     // Override with environment variables if present
+    if (process.env.LOCAL_STORAGE_PATH) cfg.local_storage_path = process.env.LOCAL_STORAGE_PATH;
     if (process.env.CLOUD_STORAGE_URL) cfg.cloud_storage_url = process.env.CLOUD_STORAGE_URL;
     if (process.env.DATABASE_URL) cfg.database_url = process.env.DATABASE_URL;
     if (process.env.RETENTION_DAYS) cfg.retention_days = parseInt(process.env.RETENTION_DAYS, 10);
@@ -46,7 +52,20 @@ class StorageManager {
       cfg.storage_type = 'local';
     }
 
+    // Ensure local directory exists
+    try {
+      if (!fs.existsSync(cfg.local_storage_path)) {
+        fs.mkdirSync(cfg.local_storage_path, { recursive: true });
+      }
+    } catch (e) {
+      console.error('[StorageManager] Error ensuring storage directory:', e.message);
+    }
+
     return cfg;
+  }
+
+  getLocalStorageDir() {
+    return this.config.local_storage_path || LOCAL_STORAGE_DIR;
   }
 
   saveConfig(newConfig) {
@@ -55,6 +74,18 @@ class StorageManager {
       this.config.storage_type = 'cloud';
     } else {
       this.config.storage_type = 'local';
+    }
+
+    if (!this.config.local_storage_path || this.config.local_storage_path.trim() === '') {
+      this.config.local_storage_path = LOCAL_STORAGE_DIR;
+    }
+
+    try {
+      if (!fs.existsSync(this.config.local_storage_path)) {
+        fs.mkdirSync(this.config.local_storage_path, { recursive: true });
+      }
+    } catch (e) {
+      console.error('[StorageManager] Failed to create custom storage directory:', e.message);
     }
 
     try {
@@ -71,7 +102,7 @@ class StorageManager {
       cloud_storage_url: this.config.cloud_storage_url || '',
       database_url: this.config.database_url ? 'Configured (Cloud Database)' : 'Local JSON Database (database.json)',
       retention_days: this.config.retention_days || 20,
-      localStoragePath: LOCAL_STORAGE_DIR
+      localStoragePath: this.getLocalStorageDir()
     };
   }
 
@@ -87,7 +118,8 @@ class StorageManager {
   }
 
   saveToLocalStorage(clientId, dateStr, filename, fileBuffer) {
-    const targetDir = path.join(LOCAL_STORAGE_DIR, clientId, dateStr);
+    const baseDir = this.getLocalStorageDir();
+    const targetDir = path.join(baseDir, clientId, dateStr);
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }

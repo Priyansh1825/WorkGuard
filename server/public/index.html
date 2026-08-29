@@ -277,9 +277,9 @@
             <input type="text" id="gallery-search-input" class="input-search" placeholder="Filter by app name...">
           </div>
           <div class="filter-actions">
-            <button class="btn btn-secondary btn-sm" id="btn-open-storage-folder" style="display: none;" title="Open storage directory in Windows Explorer">
+            <button class="btn btn-secondary btn-sm" id="btn-open-storage-folder" title="Open storage directory in Windows Explorer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              Open Folder
+              Open Storage Folder
             </button>
             <button class="btn btn-secondary btn-sm" id="btn-refresh-gallery">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
@@ -474,6 +474,23 @@
                 </button>
               </div>
               <span class="rule-subtext" id="retention-status-text">Screenshots older than 20 days are permanently purged automatically.</span>
+            </div>
+
+            <!-- Local PC Storage Directory -->
+            <div class="rule-box" style="grid-column: span 2; background: var(--bg-surface); border: 1px solid var(--border-hover);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">📁 Local PC Storage Directory (Screenshots &amp; Logs):</label>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-open-explorer-storage" style="gap: 4px;">
+                  📂 Open in Windows Explorer
+                </button>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="setting-local-storage-path" class="select-dropdown" style="flex: 1; font-family: 'JetBrains Mono'; font-size: 0.85rem;" placeholder="e.g. D:\WorkGuard_Storage or C:\Company_Data\Screenshots">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-save-storage-path" style="white-space: nowrap;">
+                  💾 Save Storage Path
+                </button>
+              </div>
+              <span class="rule-subtext" style="margin-top: 6px;">All workstation screenshot captures and audit databases are saved in this folder on your PC.</span>
             </div>
 
             <!-- Cloud Storage & Database URLs -->

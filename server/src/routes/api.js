@@ -33,6 +33,23 @@ router.post('/settings/storage', (req, res) => {
   }
 });
 
+router.post('/settings/open-storage-folder', (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const dir = storageManager.getLocalStorageDir();
+    if (process.platform === 'win32') {
+      exec(`explorer.exe "${dir}"`);
+    } else if (process.platform === 'darwin') {
+      exec(`open "${dir}"`);
+    } else {
+      exec(`xdg-open "${dir}"`);
+    }
+    res.json({ success: true, path: dir });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // --- Clients Endpoints ---
 router.get('/clients', (req, res) => {
   const clients = db.getClients();

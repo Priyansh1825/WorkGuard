@@ -271,8 +271,11 @@ async function fetchPolicy() {
 
     const storageData = await storageRes.json();
     if (storageData.success) {
+      const localPathInput = document.getElementById('setting-local-storage-path');
       const cloudUrlInput = document.getElementById('setting-cloud-storage-url');
       const dbUrlInput = document.getElementById('setting-cloud-db-url');
+      
+      if (localPathInput) localPathInput.value = storageData.localStoragePath || storageData.local_storage_path || '';
       if (cloudUrlInput) cloudUrlInput.value = storageData.cloud_storage_url || '';
       if (dbUrlInput) dbUrlInput.value = storageData.database_url && storageData.database_url.startsWith('postgres') || storageData.database_url.startsWith('mongodb') ? storageData.database_url : '';
     }
@@ -293,6 +296,7 @@ async function savePolicy() {
       retention_days: parseInt(document.getElementById('policy-retention-select').value, 10)
     };
 
+    const localStoragePath = document.getElementById('setting-local-storage-path') ? document.getElementById('setting-local-storage-path').value.trim() : '';
     const cloudStorageUrl = document.getElementById('setting-cloud-storage-url') ? document.getElementById('setting-cloud-storage-url').value.trim() : '';
     const cloudDbUrl = document.getElementById('setting-cloud-db-url') ? document.getElementById('setting-cloud-db-url').value.trim() : '';
 
@@ -306,6 +310,7 @@ async function savePolicy() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          local_storage_path: localStoragePath,
           cloud_storage_url: cloudStorageUrl,
           database_url: cloudDbUrl,
           retention_days: payload.retention_days
@@ -316,7 +321,7 @@ async function savePolicy() {
     const data = await res.json();
     if (data.success) {
       state.policy = data.policy;
-      showToast('Settings & Storage policy deployed successfully!', 'success');
+      showToast('Settings & Storage paths saved successfully!', 'success');
     }
   } catch (err) {
     showToast('Failed to save settings: ' + err.message, 'alert');
@@ -857,6 +862,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-save-policy').addEventListener('click', savePolicy);
   document.getElementById('btn-refresh-logs').addEventListener('click', fetchLogs);
+
+  // Storage Path & Explorer Openers
+  const btnSaveStoragePath = document.getElementById('btn-save-storage-path');
+  if (btnSaveStoragePath) {
+    btnSaveStoragePath.addEventListener('click', savePolicy);
+  }
+
+  const openStorageHandler = async () => {
+    try {
+      const res = await fetch('/api/settings/open-storage-folder', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Opened storage folder: ${data.path}`, 'success');
+      }
+    } catch (e) {
+      showToast('Could not open folder: ' + e.message, 'alert');
+    }
+  };
+
+  const btnOpenExplorer = document.getElementById('btn-open-explorer-storage');
+  if (btnOpenExplorer) btnOpenExplorer.addEventListener('click', openStorageHandler);
+
+  const btnOpenGalleryFolder = document.getElementById('btn-open-storage-folder');
+  if (btnOpenGalleryFolder) btnOpenGalleryFolder.addEventListener('click', openStorageHandler);
 
   const btnCleanNow = document.getElementById('btn-clean-now');
   if (btnCleanNow) {

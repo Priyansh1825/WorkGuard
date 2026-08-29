@@ -15,14 +15,13 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Storage directory for screenshots
-const SCREENSHOTS_DIR = path.join(__dirname, '..', 'storage', 'screenshots');
-if (!fs.existsSync(SCREENSHOTS_DIR)) {
-  fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
-}
+const storageManager = require('./storage_manager');
 
-// Serve uploaded screenshots as static files
-app.use('/screenshots-raw', express.static(SCREENSHOTS_DIR));
+// Serve uploaded screenshots as static files from configured local storage directory
+app.use('/screenshots-raw', (req, res, next) => {
+  const localDir = storageManager.getLocalStorageDir();
+  express.static(localDir)(req, res, next);
+});
 
 // Serve Admin Web Dashboard
 app.use(express.static(path.join(__dirname, '..', 'public')));
