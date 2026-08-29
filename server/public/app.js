@@ -453,18 +453,16 @@ function renderFleetOverview() {
           <span class="metric-val">${client.total_screenshots || 0} captures</span>
         </div>
       </div>
-      <div class="client-card-actions" style="display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 6px; padding: 12px 16px;">
-        <button class="btn btn-primary btn-xs" onclick="openLiveStreamFor('${client.id}')" title="60 FPS Live Stream">
-          ⚡ Live
+      <div class="client-card-actions" style="display: flex; gap: 8px; padding: 14px 18px;">
+        <button class="btn btn-primary btn-sm" onclick="openLiveStreamFor('${client.id}')" style="flex: 1.4; justify-content: center;" title="60 FPS Live Screen Stream">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Watch Live
         </button>
-        <button class="btn btn-secondary btn-xs" onclick="triggerInstantSnap('${client.id}')" title="Take Instant Silent Screenshot">
+        <button class="btn btn-secondary btn-sm" onclick="triggerInstantSnap('${client.id}')" style="flex: 1; justify-content: center;" title="Take Instant Silent Screenshot">
           📸 Snap
         </button>
-        <button class="btn btn-secondary btn-xs" onclick="openAdminMessageModal('${client.id}')" title="Send Notice to Employee">
-          💬 Msg
-        </button>
-        <button class="btn btn-secondary btn-xs" onclick="filterGalleryByClient('${client.id}')" title="View Captures Gallery">
-          🖼️ Log
+        <button class="btn btn-secondary btn-sm" onclick="filterGalleryByClient('${client.id}')" style="flex: 1; justify-content: center;" title="View Historical Screenshots">
+          🖼️ Gallery
         </button>
       </div>
     `;
@@ -1120,57 +1118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`Failed to update profile: ${err.message}`, 'alert');
       } finally {
         saveBtn.textContent = '💾 Save & Sync Profile';
-      }
-    });
-  }
-
-  // Broadcast / Direct Message Listeners
-  const btnBroadcast = document.getElementById('btn-broadcast-msg');
-  const msgModalClose = document.getElementById('admin-msg-modal-close');
-  const msgModalCancel = document.getElementById('btn-cancel-message');
-  const msgModalOverlay = document.getElementById('admin-message-overlay');
-  const formAdminMsg = document.getElementById('form-admin-message');
-
-  if (btnBroadcast) btnBroadcast.addEventListener('click', () => openAdminMessageModal('ALL'));
-  if (msgModalClose) msgModalClose.addEventListener('click', closeAdminMessageModal);
-  if (msgModalCancel) msgModalCancel.addEventListener('click', closeAdminMessageModal);
-  if (msgModalOverlay) msgModalOverlay.addEventListener('click', closeAdminMessageModal);
-
-  if (formAdminMsg) {
-    formAdminMsg.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const target = document.getElementById('msg-target-select').value;
-      const title = document.getElementById('msg-title-input').value.trim();
-      const msg = document.getElementById('msg-body-input').value.trim();
-
-      if (!msg) return;
-
-      try {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: 'SEND_CLIENT_MESSAGE',
-            target_client_id: target,
-            title: title || 'Manager Notice',
-            message: msg
-          }));
-          showToast(`Notice dispatched to ${target === 'ALL' ? 'all workstations' : 'workstation'}!`, 'success');
-          closeAdminMessageModal();
-          document.getElementById('msg-body-input').value = '';
-        } else {
-          const res = await fetch(`/api/clients/${target}/message`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, message: msg })
-          });
-          const data = await res.json();
-          if (data.success) {
-            showToast('Notice dispatched successfully!', 'success');
-            closeAdminMessageModal();
-            document.getElementById('msg-body-input').value = '';
-          }
-        }
-      } catch (err) {
-        showToast('Failed to send notice: ' + err.message, 'alert');
       }
     });
   }

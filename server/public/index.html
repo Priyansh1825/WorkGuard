@@ -81,9 +81,6 @@
         </div>
         <div class="topbar-actions">
           <div class="time-clock" id="live-clock">--:--:--</div>
-          <button class="btn btn-secondary btn-sm" id="btn-broadcast-msg" title="Send Direct Message / Notice to Employees">
-            <span>💬 Broadcast Notice</span>
-          </button>
           <a href="/api/export/csv" class="btn btn-secondary btn-sm" id="btn-export-csv" title="Export Fleet Audit CSV">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
             <span>Export CSV</span>
@@ -628,45 +625,6 @@
           <div style="display: flex; gap: 10px; justify-content: flex-end;">
             <button type="button" class="btn btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
             <button type="submit" class="btn btn-primary" id="btn-save-edit-profile">💾 Save &amp; Sync Profile</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Admin Direct Message / Broadcast Modal -->
-  <div class="modal" id="admin-message-modal">
-    <div class="modal-overlay" id="admin-message-overlay"></div>
-    <div class="modal-content glass-card" style="max-width: 480px;">
-      <div class="modal-header">
-        <div class="modal-title-box">
-          <h3 id="admin-msg-modal-title">💬 Dispatch Employee Notice</h3>
-          <span class="modal-subtitle">Instant Toast &amp; Banner on Workstation Screen</span>
-        </div>
-        <button class="modal-close-btn" id="admin-msg-modal-close">&times;</button>
-      </div>
-      <div class="modal-body" style="padding-top: 10px;">
-        <form id="form-admin-message" onsubmit="return false;">
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Target Recipient:</label>
-            <select id="msg-target-select" class="select-dropdown" style="width: 100%; border-radius: 8px;">
-              <option value="ALL">📢 Broadcast to ALL Workstations</option>
-            </select>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Notice Title / Topic:</label>
-            <input type="text" id="msg-title-input" class="input-search" style="width: 100%; border-radius: 8px;" placeholder="e.g. Daily Standup Reminder / Policy Notice" value="Manager Notice" required>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 16px;">
-            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Message Body:</label>
-            <textarea id="msg-body-input" class="input-search" style="width: 100%; height: 90px; border-radius: 8px; resize: vertical; padding: 10px;" placeholder="Type your message here..." required></textarea>
-          </div>
-
-          <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button type="button" class="btn btn-secondary" id="btn-cancel-message">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-send-message">🚀 Dispatch Now</button>
           </div>
         </form>
       </div>

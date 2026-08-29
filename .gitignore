@@ -19,6 +19,10 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Local personal scripts
+# Local personal scripts & diagnostics
 stop-all-workguard.bat
 stop-all.bat
+inspector/
+inspect-system.bat
+inspect-system.vbs
+package-inspector.bat

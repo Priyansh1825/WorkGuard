@@ -153,8 +153,8 @@ class ClientUIServer {
   openWindow() {
     const url = `http://127.0.0.1:${this.port}`;
     if (process.platform === 'win32') {
-      // Launch as dedicated app-window without browser toolbar
-      exec(`start msedge.exe --app="${url}" --window-size=520,640 || start "" "${url}"`);
+      // Launch as dedicated app-window without browser toolbar / tabs / address bar
+      exec(`start "" msedge.exe --app="${url}" --window-size=500,680 || start "" chrome.exe --app="${url}" --window-size=500,680 || start "" "${url}"`);
     } else {
       exec(`start "" "${url}"`);
     }
