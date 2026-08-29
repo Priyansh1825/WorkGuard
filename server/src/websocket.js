@@ -102,6 +102,34 @@ class WebSocketServerHandler {
         agentWs.send(JSON.stringify({ type: 'CAPTURE_INSTANT_SCREENSHOT' }));
       }
     });
+
+    this.app.set('deployOTAUpdate', ({ target_client_id, version, sha256, release_notes, force }) => {
+      let count = 0;
+      const payload = JSON.stringify({
+        type: 'OTA_UPDATE_COMMAND',
+        version,
+        sha256,
+        release_notes,
+        force,
+        download_url: '/api/updates/download/latest'
+      });
+
+      if (target_client_id === 'all') {
+        this.agents.forEach((agentWs) => {
+          if (agentWs.readyState === WebSocket.OPEN) {
+            agentWs.send(payload);
+            count++;
+          }
+        });
+      } else {
+        const agentWs = this.agents.get(target_client_id);
+        if (agentWs && agentWs.readyState === WebSocket.OPEN) {
+          agentWs.send(payload);
+          count++;
+        }
+      }
+      return count;
+    });
   }
 
   handleMessage(ws, message, isBinary, req) {
@@ -140,6 +168,7 @@ class WebSocketServerHandler {
             department: data.department,
             ip: ip.replace('::ffff:', ''),
             os: data.os,
+            agent_version: data.agent_version || '1.0.0',
             current_app: data.current_app,
             current_window: data.current_window,
             cpu_usage: data.cpu_usage,
@@ -156,6 +185,27 @@ class WebSocketServerHandler {
 
           // Notify admins of updated fleet status
           this.broadcastFleetUpdate();
+          break;
+        }
+
+        case 'OTA_UPDATE_PROGRESS': {
+          if (ws.clientId) {
+            this.broadcastToAdmins({
+              type: 'OTA_UPDATE_PROGRESS',
+              client_id: ws.clientId,
+              status: data.status,
+              percent: data.percent,
+              message: data.message,
+              version: data.version
+            });
+            if (data.status === 'updated' && data.version) {
+              db.upsertClient({
+                id: ws.clientId,
+                agent_version: data.version
+              });
+              this.broadcastFleetUpdate();
+            }
+          }
           break;
         }
 

@@ -238,4 +238,117 @@ router.get('/stats', (req, res) => {
   res.json({ success: true, stats });
 });
 
+// --- OTA Remote Client Updates Endpoints ---
+const updatesManager = require('../updates_manager');
+
+router.get('/updates/status', (req, res) => {
+  try {
+    updatesManager.syncDistPackage();
+    const versionInfo = updatesManager.getVersionInfo();
+    const clients = db.getClients();
+    
+    // Count outdated clients
+    const fleetStatus = {
+      total: clients.length,
+      online: clients.filter(c => c.status === 'online').length,
+      up_to_date: clients.filter(c => (c.agent_version || '1.0.0') === versionInfo.version).length,
+      outdated: clients.filter(c => (c.agent_version || '1.0.0') !== versionInfo.version).length,
+      clients: clients.map(c => ({
+        id: c.id,
+        hostname: c.hostname,
+        username: c.username,
+        employee_name: c.employee_name,
+        department: c.department,
+        status: c.status,
+        agent_version: c.agent_version || '1.0.0',
+        is_latest: (c.agent_version || '1.0.0') === versionInfo.version
+      }))
+    };
+
+    res.json({
+      success: true,
+      latest_version: versionInfo.version,
+      release_notes: versionInfo.release_notes,
+      released_at: versionInfo.released_at,
+      bundle_size: versionInfo.bundle_size,
+      bundle_available: !!updatesManager.getLatestZipPath(),
+      fleet: fleetStatus
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/updates/deploy', (req, res) => {
+  try {
+    const { target_client_id, target_version, force } = req.body;
+    const versionInfo = updatesManager.getVersionInfo();
+    const zipPath = updatesManager.getLatestZipPath();
+
+    if (!zipPath || !fs.existsSync(zipPath)) {
+      return res.status(404).json({ success: false, error: 'No update package bundle (.zip) available to deploy. Please build or upload one first.' });
+    }
+
+    const deployVersion = target_version || versionInfo.version;
+    const dispatchFn = req.app.get('deployOTAUpdate');
+
+    if (dispatchFn) {
+      const dispatchedCount = dispatchFn({
+        target_client_id: target_client_id || 'all',
+        version: deployVersion,
+        sha256: versionInfo.sha256,
+        release_notes: versionInfo.release_notes,
+        force: !!force
+      });
+
+      res.json({
+        success: true,
+        message: `OTA Update v${deployVersion} dispatched to ${dispatchedCount} connected agent(s).`,
+        dispatched_count: dispatchedCount,
+        version: deployVersion
+      });
+    } else {
+      res.status(500).json({ success: false, error: 'WebSocket OTA dispatcher not initialized.' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/updates/download/latest', (req, res) => {
+  try {
+    const zipPath = updatesManager.getLatestZipPath();
+    if (!zipPath || !fs.existsSync(zipPath)) {
+      return res.status(404).json({ success: false, error: 'Update archive not found on server.' });
+    }
+
+    const versionInfo = updatesManager.getVersionInfo();
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="WorkGuard-Client-Agent-v${versionInfo.version}.zip"`);
+    res.setHeader('X-Agent-Version', versionInfo.version);
+    res.setHeader('X-Agent-SHA256', versionInfo.sha256 || '');
+
+    const fileStream = fs.createReadStream(zipPath);
+    fileStream.pipe(res);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/updates/upload-bundle', upload.single('bundle'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No update bundle zip file provided.' });
+    }
+
+    const version = req.body.version || '1.2.0';
+    const notes = req.body.release_notes || `Uploaded package: ${req.file.originalname}`;
+
+    const info = updatesManager.saveUploadedBundle(req.file.buffer, req.file.originalname, version, notes);
+    res.json({ success: true, message: 'Update bundle uploaded and staged successfully!', info });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

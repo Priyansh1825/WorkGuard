@@ -493,6 +493,53 @@
               <span class="rule-subtext" style="margin-top: 6px;">All workstation screenshot captures and audit databases are saved in this folder on your PC.</span>
             </div>
 
+            <!-- Remote 1-Click Client Agent OTA Updater -->
+            <div class="rule-box ota-updater-box" style="grid-column: span 2; background: var(--bg-card); border: 1px solid var(--primary-pill);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.1rem;">🚀</span>
+                    <label style="font-size: 1rem; font-weight: 800; color: var(--text-main);">Remote Client Agent OTA Updater</label>
+                    <span class="badge-pill" id="ota-server-version-badge" style="background: var(--primary-light); color: var(--primary); font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; border: 1px solid var(--primary-pill);">Release v1.2.0</span>
+                  </div>
+                  <span class="rule-subtext">Push code, binary updates, and new features remotely across all employee workstations without manual re-installation.</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <input type="file" id="ota-bundle-file-input" accept=".zip" style="display: none;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-ota-bundle" title="Upload custom client agent package zip">
+                    📦 Upload New .ZIP
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-deploy-ota-all" style="background: linear-gradient(135deg, #4f46e5, #06b6d4); color: #fff;">
+                    🚀 Deploy 1-Click Update to Fleet
+                  </button>
+                </div>
+              </div>
+
+              <!-- Fleet Version Breakdown Metrics -->
+              <div class="ota-metrics-strip" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px;">
+                <div style="background: var(--bg-surface); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                  <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Latest Release</span>
+                  <div style="font-size: 1.1rem; font-weight: 800; color: var(--primary);" id="ota-latest-version-text">v1.2.0</div>
+                </div>
+                <div style="background: var(--bg-surface); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                  <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Up-to-Date Workstations</span>
+                  <div style="font-size: 1.1rem; font-weight: 800; color: var(--emerald);" id="ota-count-uptodate">0</div>
+                </div>
+                <div style="background: var(--bg-surface); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                  <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Outdated Workstations</span>
+                  <div style="font-size: 1.1rem; font-weight: 800; color: var(--rose);" id="ota-count-outdated">0</div>
+                </div>
+              </div>
+
+              <!-- Live Workstations Update Queue Table -->
+              <div id="ota-fleet-status-container" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Connected Workstation Update Status:</div>
+                <div id="ota-workstations-list" style="display: flex; flex-direction: column; gap: 8px;">
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">No client agents currently connected.</p>
+                </div>
+              </div>
+            </div>
+
             <!-- Cloud Storage & Database URLs -->
             <div class="rule-box" style="grid-column: span 2;">
               <label>☁️ Cloud Storage Endpoint URL (Optional):</label>

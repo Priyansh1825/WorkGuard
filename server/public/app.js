@@ -76,6 +76,10 @@ function initWebSocket() {
           showToast('Policy updated & deployed to all agents!', 'success');
           break;
 
+        case 'OTA_UPDATE_PROGRESS':
+          handleOTAUpdateProgress(data);
+          break;
+
         case 'STREAM_ENDED':
           if (state.activeStreamClientId === data.client_id) {
             stopLiveStream();
@@ -422,9 +426,10 @@ function renderFleetOverview() {
               ✏️
             </button>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
             <span class="emp-card-dept" style="background: ${tone.bg}; color: ${tone.text}; border-color: ${tone.border};">${empDept}</span>
             <span class="emp-card-host">${client.hostname} • ${client.ip}</span>
+            <span style="font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 9999px; background: ${(client.agent_version || '1.0.0') === (state.latestAgentVersion || '1.2.0') ? 'var(--emerald-light)' : 'var(--rose-light)'}; color: ${(client.agent_version || '1.0.0') === (state.latestAgentVersion || '1.2.0') ? 'var(--emerald)' : 'var(--rose)'}; border: 1px solid ${(client.agent_version || '1.0.0') === (state.latestAgentVersion || '1.2.0') ? 'var(--emerald-pill)' : 'var(--rose-pill)'};" title="Agent Daemon Version">v${client.agent_version || '1.0.0'}</span>
           </div>
         </div>
         <div class="online-tag ${isOnline ? '' : 'offline'}">
@@ -458,16 +463,19 @@ function renderFleetOverview() {
           <span class="metric-val">${client.total_screenshots || 0} captures</span>
         </div>
       </div>
-      <div class="client-card-actions" style="display: flex; gap: 8px; padding: 14px 18px;">
-        <button class="btn btn-primary btn-sm" onclick="openLiveStreamFor('${client.id}')" style="flex: 1.4; justify-content: center;" title="60 FPS Live Screen Stream">
+      <div class="client-card-actions" style="display: flex; gap: 6px; padding: 14px 18px; flex-wrap: wrap;">
+        <button class="btn btn-primary btn-sm" onclick="openLiveStreamFor('${client.id}')" style="flex: 1.3; justify-content: center;" title="60 FPS Live Screen Stream">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Watch Live
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="triggerInstantSnap('${client.id}')" style="flex: 1; justify-content: center;" title="Take Instant Silent Screenshot">
+        <button class="btn btn-secondary btn-sm" onclick="triggerInstantSnap('${client.id}')" style="flex: 0.9; justify-content: center;" title="Take Instant Silent Screenshot">
           📸 Snap
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="filterGalleryByClient('${client.id}')" style="flex: 1; justify-content: center;" title="View Historical Screenshots">
+        <button class="btn btn-secondary btn-sm" onclick="filterGalleryByClient('${client.id}')" style="flex: 0.9; justify-content: center;" title="View Historical Screenshots">
           🖼️ Gallery
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="deployOTAUpdateTo('${client.id}')" style="flex: 0.9; justify-content: center; background: var(--bg-card-subtle);" title="Deploy remote update to this workstation">
+          🚀 Update
         </button>
       </div>
     `;
@@ -1163,7 +1171,198 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // OTA Client Updater Controls
+  const btnDeployOTAAll = document.getElementById('btn-deploy-ota-all');
+  if (btnDeployOTAAll) {
+    btnDeployOTAAll.addEventListener('click', () => {
+      if (confirm('🚀 Deploy Remote OTA Update to all connected workstations now?')) {
+        deployOTAUpdateTo('all');
+      }
+    });
+  }
+
+  const btnUploadOTABundle = document.getElementById('btn-upload-ota-bundle');
+  const fileInputOTABundle = document.getElementById('ota-bundle-file-input');
+  if (btnUploadOTABundle && fileInputOTABundle) {
+    btnUploadOTABundle.addEventListener('click', () => {
+      fileInputOTABundle.click();
+    });
+
+    fileInputOTABundle.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('bundle', file);
+
+      btnUploadOTABundle.textContent = 'Uploading...';
+      btnUploadOTABundle.disabled = true;
+
+      try {
+        const res = await fetch('/api/updates/upload-bundle', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ ${data.message} (v${data.info.version})`, 'success');
+          fetchOTAStatus();
+        } else {
+          showToast(`Upload failed: ${data.error}`, 'alert');
+        }
+      } catch (err) {
+        showToast(`Upload error: ${err.message}`, 'alert');
+      } finally {
+        btnUploadOTABundle.textContent = '📦 Upload New .ZIP';
+        btnUploadOTABundle.disabled = false;
+        fileInputOTABundle.value = '';
+      }
+    });
+  }
+
+  // Fetch initial OTA Status
+  fetchOTAStatus();
 });
+
+// --- OTA Remote Client Updates Manager ---
+async function fetchOTAStatus() {
+  try {
+    const res = await fetch('/api/updates/status');
+    const data = await res.json();
+    if (!data.success) return;
+
+    state.latestAgentVersion = data.latest_version;
+    const badge = document.getElementById('ota-server-version-badge');
+    const versionText = document.getElementById('ota-latest-version-text');
+    const countUpToDate = document.getElementById('ota-count-uptodate');
+    const countOutdated = document.getElementById('ota-count-outdated');
+
+    if (badge) badge.textContent = `Release v${data.latest_version}`;
+    if (versionText) versionText.textContent = `v${data.latest_version}`;
+    if (countUpToDate) countUpToDate.textContent = data.fleet.up_to_date;
+    if (countOutdated) countOutdated.textContent = data.fleet.outdated;
+
+    renderOTAFleetList(data.fleet.clients, data.latest_version);
+  } catch (err) {
+    console.error('Failed to fetch OTA status:', err);
+  }
+}
+
+function renderOTAFleetList(clients, latestVersion) {
+  const container = document.getElementById('ota-workstations-list');
+  if (!container) return;
+
+  if (!clients || clients.length === 0) {
+    container.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">No client agents registered yet.</p>';
+    return;
+  }
+
+  container.innerHTML = clients.map(client => {
+    const isLatest = (client.agent_version || '1.0.0') === latestVersion;
+    const isOnline = client.status === 'online';
+
+    return `
+      <div id="ota-row-${client.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-card-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="status-indicator ${isOnline ? '' : 'offline'}" style="width: 8px; height: 8px;"></span>
+          <div>
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">${client.hostname} (${client.employee_name || client.username})</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-family: 'JetBrains Mono';">${client.id}</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="badge-pill" id="ota-badge-${client.id}" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: ${isLatest ? 'var(--emerald-light)' : 'var(--rose-light)'}; color: ${isLatest ? 'var(--emerald)' : 'var(--rose)'}; border: 1px solid ${isLatest ? 'var(--emerald-pill)' : 'var(--rose-pill)'};">
+            v${client.agent_version || '1.0.0'} ${isLatest ? '✓' : '⚠️ Outdated'}
+          </span>
+          <button type="button" class="btn btn-secondary btn-xs" id="ota-btn-${client.id}" onclick="deployOTAUpdateTo('${client.id}')" ${!isOnline ? 'disabled title="Client is offline"' : ''} style="gap: 4px;">
+            🚀 ${isLatest ? 'Re-Deploy' : 'Deploy Update'}
+          </button>
+        </div>
+        <div id="ota-progress-bar-${client.id}" style="display: none; width: 100%; height: 4px; background: var(--bg-card); border-radius: 9999px; overflow: hidden; margin-top: 4px;">
+          <div id="ota-progress-fill-${client.id}" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4f46e5, #06b6d4); transition: width 0.3s;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function deployOTAUpdateTo(clientId, force = false) {
+  try {
+    showToast(`🚀 Dispatched OTA update command to ${clientId === 'all' ? 'all workstations' : clientId}...`, 'info');
+    const res = await fetch('/api/updates/deploy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_client_id: clientId, force })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message, 'success');
+      fetchOTAStatus();
+    } else {
+      showToast(`OTA Error: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Failed to deploy update: ${err.message}`, 'alert');
+  }
+}
+
+function handleOTAUpdateProgress(data) {
+  const { client_id, status, percent, message, version } = data;
+  const badge = document.getElementById(`ota-badge-${client_id}`);
+  const progressBar = document.getElementById(`ota-progress-bar-${client_id}`);
+  const progressFill = document.getElementById(`ota-progress-fill-${client_id}`);
+  const btn = document.getElementById(`ota-btn-${client_id}`);
+
+  if (progressBar && progressFill) {
+    progressBar.style.display = 'block';
+    if (percent !== undefined) progressFill.style.width = `${percent}%`;
+  }
+
+  if (badge) {
+    if (status === 'downloading') {
+      badge.textContent = `Downloading ${percent || 0}%`;
+      badge.style.background = 'var(--cyan-light)';
+      badge.style.color = 'var(--cyan)';
+      badge.style.borderColor = 'var(--cyan-pill)';
+    } else if (status === 'installing') {
+      badge.textContent = `Extracting...`;
+      badge.style.background = 'var(--amber-light)';
+      badge.style.color = 'var(--amber)';
+      badge.style.borderColor = 'var(--amber-pill)';
+    } else if (status === 'restarting') {
+      badge.textContent = `Restarting Daemon...`;
+      badge.style.background = 'var(--purple-light)';
+      badge.style.color = 'var(--purple)';
+      badge.style.borderColor = 'var(--purple-pill)';
+    } else if (status === 'updated' || status === 'already_latest') {
+      badge.textContent = `v${version || '1.2.0'} ✓`;
+      badge.style.background = 'var(--emerald-light)';
+      badge.style.color = 'var(--emerald)';
+      badge.style.borderColor = 'var(--emerald-pill)';
+      if (progressBar) progressBar.style.display = 'none';
+      if (btn) {
+        btn.textContent = '🚀 Re-Deploy';
+        btn.disabled = false;
+      }
+    } else if (status === 'error') {
+      badge.textContent = `Update Failed`;
+      badge.style.background = 'var(--rose-light)';
+      badge.style.color = 'var(--rose)';
+      badge.style.borderColor = 'var(--rose-pill)';
+      if (progressBar) progressBar.style.display = 'none';
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  if (status === 'restarting' || status === 'updated') {
+    showToast(`Workstation ${client_id}: ${message || 'Updated successfully!'}`, status === 'error' ? 'alert' : 'success');
+    setTimeout(() => {
+      fetchClients();
+      fetchOTAStatus();
+    }, 2000);
+  }
+}
 
 
 

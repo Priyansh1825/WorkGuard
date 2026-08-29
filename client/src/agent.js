@@ -7,12 +7,14 @@ const webController = require('./web_controller');
 const offlineQueue = require('./offline_queue');
 const autoDiscovery = require('./auto_discovery');
 const ClientUIServer = require('./ui_server');
+const updater = require('./updater');
 const { getActiveWindowInfo } = require('./system_info');
 
 console.log(`=======================================================`);
 console.log(`🛡️  WorkGuard Client Agent Initializing...`);
 console.log(`💻 Client ID:   ${config.CLIENT_ID}`);
 console.log(`🖥️  Host / User: ${config.HOSTNAME} (${config.USERNAME})`);
+console.log(`🏷️  Version:     v${config.AGENT_VERSION}`);
 console.log(`📡 Server URL:  ${config.SERVER_HTTP_URL} (Auto-discovery: ${config.AUTO_DISCOVER ? 'ON' : 'OFF'})`);
 console.log(`🖥️  Employee UI: ${config.ENABLE_UI ? 'Enabled' : 'Disabled (Stealth)'}`);
 console.log(`=======================================================`);
@@ -96,6 +98,7 @@ function connectToServer() {
       employee_name: config.EMPLOYEE_NAME,
       department: config.DEPARTMENT,
       os: config.OS_TYPE,
+      agent_version: config.AGENT_VERSION,
       current_app: sys.processName,
       current_window: sys.windowTitle,
       cpu_usage: sys.cpuUsage,
@@ -117,6 +120,10 @@ function connectToServer() {
             console.log(`[Policy] Updated: Interval=${currentPolicy.capture_interval_sec}s, Mode=${currentPolicy.policy_mode}`);
             resetCaptureTimer();
           }
+          break;
+
+        case 'OTA_UPDATE_COMMAND':
+          updater.handleOTAUpdate(msg, ws);
           break;
 
         case 'UPDATE_EMPLOYEE_PROFILE':

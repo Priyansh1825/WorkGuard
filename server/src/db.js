@@ -73,7 +73,7 @@ class Database {
 
   // --- Clients ---
   upsertClient(clientInfo) {
-    const { id, hostname, username, employee_name, department, ip, os, current_app, current_window, cpu_usage, ram_usage } = clientInfo;
+    const { id, hostname, username, employee_name, department, ip, os, current_app, current_window, cpu_usage, ram_usage, agent_version } = clientInfo;
     const now = new Date().toISOString();
     
     if (!this.data.clients[id]) {
@@ -86,6 +86,7 @@ class Database {
         ip: ip || '127.0.0.1',
         os: os || 'Windows',
         status: 'online',
+        agent_version: agent_version || '1.0.0',
         current_app: current_app || 'None',
         current_window: current_window || 'Desktop',
         cpu_usage: cpu_usage || 0,
@@ -94,7 +95,7 @@ class Database {
         last_seen: now,
         total_screenshots: 0
       };
-      this.addLog(id, 'AGENT_CONNECTED', `Agent registered: ${employee_name || username} from ${hostname} (${ip})`);
+      this.addLog(id, 'AGENT_CONNECTED', `Agent registered: ${employee_name || username} from ${hostname} (${ip}) - v${agent_version || '1.0.0'}`);
     } else {
       this.data.clients[id] = {
         ...this.data.clients[id],
@@ -104,6 +105,7 @@ class Database {
         department: department || this.data.clients[id].department || 'General',
         ip: ip || this.data.clients[id].ip,
         status: 'online',
+        agent_version: agent_version || this.data.clients[id].agent_version || '1.0.0',
         current_app: current_app !== undefined ? current_app : this.data.clients[id].current_app,
         current_window: current_window !== undefined ? current_window : this.data.clients[id].current_window,
         cpu_usage: cpu_usage !== undefined ? cpu_usage : this.data.clients[id].cpu_usage,

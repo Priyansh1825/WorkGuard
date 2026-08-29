@@ -104,7 +104,8 @@ const config = {
   },
   BUFFER_DIR: DATA_DIR,
   DEFAULT_CAPTURE_INTERVAL_SEC: 600,
-  MAX_OFFLINE_BUFFER_COUNT: 200
+  MAX_OFFLINE_BUFFER_COUNT: 200,
+  AGENT_VERSION: '1.2.0'
 };
 
 module.exports = config;
