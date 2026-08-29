@@ -66,12 +66,30 @@ async function createWindow() {
   // Remove default menu bar for modern clean look
   mainWindow.setMenuBarVisibility(false);
 
+  // Auto-retry if server is still spinning up
+  mainWindow.webContents.on('did-fail-load', (event, errorCode) => {
+    if (errorCode === -102 || errorCode === -105 || errorCode === -106) {
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.loadURL(`http://localhost:${PORT}`);
+        }
+      }, 800);
+    }
+  });
+
   // Load Admin Dashboard
   mainWindow.loadURL(`http://localhost:${PORT}`);
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
   });
+
+  // Fallback show in case ready-to-show takes too long
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  }, 2500);
 
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
