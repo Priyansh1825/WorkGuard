@@ -4,16 +4,18 @@
       "id": "client-er6e8b7",
       "hostname": "Piyu",
       "username": "priya",
-      "ip": "127.0.0.1",
+      "ip": "192.168.2.136",
       "os": "Windows_NT 10.0.26200",
       "status": "online",
-      "current_app": "☕ On Break",
-      "current_window": "Break Mode Active",
+      "current_app": "explorer.exe",
+      "current_window": "Desktop",
       "cpu_usage": 23,
-      "ram_usage": 94,
+      "ram_usage": 96,
       "first_seen": "2026-08-27T06:21:37.504Z",
-      "last_seen": "2026-08-29T07:41:59.983Z",
-      "total_screenshots": 2228
+      "last_seen": "2026-08-29T07:52:31.539Z",
+      "total_screenshots": 2232,
+      "employee_name": "priya",
+      "department": "General"
     },
     "test-station-01": {
       "id": "test-station-01",
@@ -32,6 +34,46 @@
     }
   },
   "screenshots": [
+    {
+      "id": "1803224e-df78-4379-9b1d-4b1caceb9b6d",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787989948297.jpg",
+      "filename": "1787989948297.jpg",
+      "timestamp": "2026-08-29T07:52:28.288Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 173934
+    },
+    {
+      "id": "684a40aa-f110-458e-a43d-c1d708d6bb1c",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787989933179.jpg",
+      "filename": "1787989933179.jpg",
+      "timestamp": "2026-08-29T07:52:13.168Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 175157
+    },
+    {
+      "id": "16d0dc61-aaff-46a0-a53a-61408318ef02",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787989918114.jpg",
+      "filename": "1787989918114.jpg",
+      "timestamp": "2026-08-29T07:51:58.106Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 174652
+    },
+    {
+      "id": "96767272-5938-4233-b518-6c36182f8373",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787989902955.jpg",
+      "filename": "1787989902955.jpg",
+      "timestamp": "2026-08-29T07:51:33.653Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 244315
+    },
     {
       "id": "80b37a1c-8f49-43f2-a69e-79fe5837e214",
       "client_id": "client-er6e8b7",
