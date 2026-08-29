@@ -74,6 +74,34 @@ class WebSocketServerHandler {
       }
       this.broadcastFleetUpdate();
     });
+
+    this.app.set('sendClientMessage', (clientId, { title, message }) => {
+      const payload = JSON.stringify({
+        type: 'ADMIN_NOTIFICATION',
+        title: title || 'Manager Notice',
+        message: message || 'Please check your workstation tasks.'
+      });
+
+      if (clientId === 'ALL') {
+        this.agents.forEach((agentWs) => {
+          if (agentWs.readyState === WebSocket.OPEN) {
+            agentWs.send(payload);
+          }
+        });
+      } else {
+        const agentWs = this.agents.get(clientId);
+        if (agentWs && agentWs.readyState === WebSocket.OPEN) {
+          agentWs.send(payload);
+        }
+      }
+    });
+
+    this.app.set('requestInstantScreenshot', (clientId) => {
+      const agentWs = this.agents.get(clientId);
+      if (agentWs && agentWs.readyState === WebSocket.OPEN) {
+        agentWs.send(JSON.stringify({ type: 'CAPTURE_INSTANT_SCREENSHOT' }));
+      }
+    });
   }
 
   handleMessage(ws, message, isBinary, req) {
@@ -224,6 +252,30 @@ class WebSocketServerHandler {
           const agentWs = this.agents.get(targetClientId);
           if (agentWs && agentWs.readyState === WebSocket.OPEN) {
             agentWs.send(JSON.stringify({ type: 'CAPTURE_INSTANT_SCREENSHOT' }));
+          }
+          break;
+        }
+
+        case 'SEND_CLIENT_MESSAGE': {
+          const targetClientId = data.target_client_id;
+          const payload = JSON.stringify({
+            type: 'ADMIN_NOTIFICATION',
+            title: data.title || 'Manager Notice',
+            message: data.message || 'Please check your workstation tasks.'
+          });
+
+          if (targetClientId === 'ALL') {
+            // Broadcast to all connected agents
+            this.agents.forEach((agentWs) => {
+              if (agentWs.readyState === WebSocket.OPEN) {
+                agentWs.send(payload);
+              }
+            });
+          } else {
+            const agentWs = this.agents.get(targetClientId);
+            if (agentWs && agentWs.readyState === WebSocket.OPEN) {
+              agentWs.send(payload);
+            }
           }
           break;
         }

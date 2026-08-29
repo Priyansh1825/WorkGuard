@@ -12,6 +12,16 @@ class ClientUIServer {
     this.port = DEFAULT_UI_PORT;
     this.server = null;
     this.isOnBreak = false;
+    this.latestNotification = null;
+  }
+
+  broadcastNotification(message, title) {
+    this.latestNotification = {
+      id: Date.now(),
+      title: title || 'Manager Notice',
+      message: message || '',
+      timestamp: Date.now()
+    };
   }
 
   start(port = DEFAULT_UI_PORT) {
@@ -82,6 +92,7 @@ class ClientUIServer {
     if (pathname === '/api/status' && req.method === 'GET') {
       const status = this.agent.getLiveStatus ? this.agent.getLiveStatus() : {};
       status.isOnBreak = this.isOnBreak;
+      status.notification = this.latestNotification;
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(status));
     }

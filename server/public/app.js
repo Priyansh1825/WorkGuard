@@ -401,11 +401,15 @@ function renderFleetOverview() {
     ];
     const tone = colorTones[idx % colorTones.length];
 
+    const cpuVal = client.cpu_usage || 0;
+    const ramVal = client.ram_usage || 0;
+    const cpuColor = cpuVal > 85 ? 'var(--rose)' : cpuVal > 65 ? 'var(--amber)' : 'var(--emerald)';
+
     card.innerHTML = `
       <div class="client-card-header">
         <div class="client-identity">
           <div class="emp-title-wrap">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: ${tone.bg}; color: ${tone.text}; border: 1px solid ${tone.border}; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0;">
+            <div style="width: 34px; height: 34px; border-radius: 50%; background: ${tone.bg}; color: ${tone.text}; border: 1px solid ${tone.border}; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; box-shadow: var(--shadow-sm);">
               ${initials}
             </div>
             <h3 class="emp-card-name" onclick="openAdminEditProfileModal('${client.id}')" title="Click to rename employee">${empName}</h3>
@@ -427,44 +431,111 @@ function renderFleetOverview() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
           <span>Click for 60 FPS Live Monitor</span>
         </div>
-        <div style="position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #0f172a; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: transform 0.2s;" title="Watch Live Stream">
+        <div style="position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.92); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #0f172a; box-shadow: 0 4px 12px rgba(0,0,0,0.18); transition: transform 0.2s;" title="Watch Live Stream">
           ↗
         </div>
       </div>
       <div class="client-card-body">
         <div class="metric-row">
-          <span class="metric-label">Active Program:</span>
+          <span class="metric-label">Active App:</span>
           <span class="metric-val" title="${client.current_app || 'None'}">${client.current_app || 'Idle'}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">Foreground Window:</span>
+          <span class="metric-label">Window:</span>
           <span class="metric-val" title="${client.current_window || 'Desktop'}">${client.current_window || 'Desktop'}</span>
         </div>
         <div class="metric-row">
           <span class="metric-label">CPU / RAM:</span>
-          <span class="metric-val">${client.cpu_usage || 0}% CPU • ${client.ram_usage || 0}% RAM</span>
+          <span class="metric-val" style="color: ${cpuColor};">${cpuVal}% CPU • ${ramVal}% RAM</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">Total Captures:</span>
-          <span class="metric-val">${client.total_screenshots || 0} shots</span>
+          <span class="metric-label">Total Shots:</span>
+          <span class="metric-val">${client.total_screenshots || 0} captures</span>
         </div>
       </div>
-      <div class="client-card-actions">
-        <button class="btn btn-primary btn-sm" onclick="openLiveStreamFor('${client.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Watch Live
+      <div class="client-card-actions" style="display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 6px; padding: 12px 16px;">
+        <button class="btn btn-primary btn-xs" onclick="openLiveStreamFor('${client.id}')" title="60 FPS Live Stream">
+          ⚡ Live
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="filterGalleryByClient('${client.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/></svg>
-          Gallery
+        <button class="btn btn-secondary btn-xs" onclick="triggerInstantSnap('${client.id}')" title="Take Instant Silent Screenshot">
+          📸 Snap
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="openAdminEditProfileModal('${client.id}')" title="Edit Employee Name & Department">
-          ✏️ Edit
+        <button class="btn btn-secondary btn-xs" onclick="openAdminMessageModal('${client.id}')" title="Send Notice to Employee">
+          💬 Msg
+        </button>
+        <button class="btn btn-secondary btn-xs" onclick="filterGalleryByClient('${client.id}')" title="View Captures Gallery">
+          🖼️ Log
         </button>
       </div>
     `;
     container.appendChild(card);
   });
+}
+
+function triggerInstantSnap(clientId) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'REQUEST_INSTANT_SCREENSHOT',
+      target_client_id: clientId
+    }));
+    showToast('📸 Instant capture request sent to employee agent!', 'success');
+  } else {
+    fetch(`/api/clients/${clientId}/capture`, { method: 'POST' })
+      .then(() => showToast('📸 Instant capture requested', 'success'))
+      .catch(e => showToast(`Error: ${e.message}`, 'alert'));
+  }
+}
+
+// Analytics Loader & Renderer
+async function fetchAnalytics() {
+  try {
+    const res = await fetch('/api/analytics');
+    const data = await res.json();
+    if (!data.success) return;
+
+    // Update Top Stat Cards
+    document.getElementById('analytics-dept-count').textContent = (data.departments || []).length;
+    if (data.top_apps && data.top_apps.length > 0) {
+      document.getElementById('analytics-top-app').textContent = data.top_apps[0].name;
+    }
+
+    // Render Apps List
+    const appsList = document.getElementById('analytics-apps-list');
+    if (appsList) {
+      if (!data.top_apps || data.top_apps.length === 0) {
+        appsList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No active telemetry received yet.</p>';
+      } else {
+        appsList.innerHTML = data.top_apps.map(app => `
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700;">
+              <span>${app.name}</span>
+              <span style="color: var(--primary);">${app.count} workstation(s) (${app.percent}%)</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--bg-card-subtle); border-radius: 9999px; overflow: hidden; border: 1px solid var(--border-subtle);">
+              <div style="width: ${app.percent}%; height: 100%; background: linear-gradient(90deg, #4f46e5, #06b6d4); border-radius: 9999px;"></div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Render Departments List
+    const deptsList = document.getElementById('analytics-depts-list');
+    if (deptsList) {
+      if (!data.departments || data.departments.length === 0) {
+        deptsList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No registered departments yet.</p>';
+      } else {
+        deptsList.innerHTML = data.departments.map(dept => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-card-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+            <span style="font-size: 0.88rem; font-weight: 700;">🏢 ${dept.name}</span>
+            <span class="tag" style="background: var(--primary-light); color: var(--primary); font-weight: 700; border-radius: var(--radius-pill);">${dept.count} Employee(s)</span>
+          </div>
+        `).join('');
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load analytics:', e);
+  }
 }
 
 function updateLiveStreamSelectors() {
@@ -646,6 +717,7 @@ function closeLightbox() {
 
 // Navigation & Tab Switching
 function switchTab(tabId) {
+  state.activeTab = tabId;
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabId);
   });
@@ -657,16 +729,21 @@ function switchTab(tabId) {
     overview: ['Fleet Overview', 'Real-time endpoint activity and productivity metrics'],
     'live-stream': ['Live Screen Monitor', 'Low-latency real-time workstation screen streaming'],
     screenshots: ['Screenshot Timeline', 'Automated periodic silent captures & activity history'],
+    analytics: ['Productivity & Analytics', 'Workforce application usage ranking & department distribution'],
     policies: ['Whitelists & Rules', 'Application & website restriction policies'],
     logs: ['Activity & Audit Logs', 'Tamper-evident logs of rule violations and system events']
   };
 
-  document.getElementById('page-title').textContent = titles[tabId][0];
-  document.getElementById('page-subtitle').textContent = titles[tabId][1];
+  if (titles[tabId]) {
+    document.getElementById('page-title').textContent = titles[tabId][0];
+    document.getElementById('page-subtitle').textContent = titles[tabId][1];
+  }
 
   if (tabId === 'screenshots') fetchScreenshots();
   if (tabId === 'policies') fetchPolicy();
   if (tabId === 'logs') fetchLogs();
+  if (tabId === 'analytics') fetchAnalytics();
+  if (tabId === 'overview') fetchClients();
 }
 
 function openLiveStreamFor(clientId) {
@@ -682,6 +759,32 @@ function filterGalleryByClient(clientId) {
   switchTab('screenshots');
   document.getElementById('gallery-client-filter').value = clientId;
   fetchScreenshots();
+}
+
+// Manager Direct Message Modal
+function openAdminMessageModal(preselectClientId = 'ALL') {
+  const modal = document.getElementById('admin-message-modal');
+  const targetSelect = document.getElementById('msg-target-select');
+  if (!modal || !targetSelect) return;
+
+  targetSelect.innerHTML = '<option value="ALL">📢 Broadcast to ALL Workstations</option>';
+  state.clients.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `💻 ${c.employee_name || c.username || c.hostname} (${c.department || 'General'})`;
+    targetSelect.appendChild(opt);
+  });
+
+  if (preselectClientId) {
+    targetSelect.value = preselectClientId;
+  }
+
+  modal.classList.add('active');
+}
+
+function closeAdminMessageModal() {
+  const modal = document.getElementById('admin-message-modal');
+  if (modal) modal.classList.remove('active');
 }
 
 function showToast(message, type = 'info') {
@@ -1020,6 +1123,71 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Broadcast / Direct Message Listeners
+  const btnBroadcast = document.getElementById('btn-broadcast-msg');
+  const msgModalClose = document.getElementById('admin-msg-modal-close');
+  const msgModalCancel = document.getElementById('btn-cancel-message');
+  const msgModalOverlay = document.getElementById('admin-message-overlay');
+  const formAdminMsg = document.getElementById('form-admin-message');
+
+  if (btnBroadcast) btnBroadcast.addEventListener('click', () => openAdminMessageModal('ALL'));
+  if (msgModalClose) msgModalClose.addEventListener('click', closeAdminMessageModal);
+  if (msgModalCancel) msgModalCancel.addEventListener('click', closeAdminMessageModal);
+  if (msgModalOverlay) msgModalOverlay.addEventListener('click', closeAdminMessageModal);
+
+  if (formAdminMsg) {
+    formAdminMsg.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const target = document.getElementById('msg-target-select').value;
+      const title = document.getElementById('msg-title-input').value.trim();
+      const msg = document.getElementById('msg-body-input').value.trim();
+
+      if (!msg) return;
+
+      try {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'SEND_CLIENT_MESSAGE',
+            target_client_id: target,
+            title: title || 'Manager Notice',
+            message: msg
+          }));
+          showToast(`Notice dispatched to ${target === 'ALL' ? 'all workstations' : 'workstation'}!`, 'success');
+          closeAdminMessageModal();
+          document.getElementById('msg-body-input').value = '';
+        } else {
+          const res = await fetch(`/api/clients/${target}/message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, message: msg })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast('Notice dispatched successfully!', 'success');
+            closeAdminMessageModal();
+            document.getElementById('msg-body-input').value = '';
+          }
+        }
+      } catch (err) {
+        showToast('Failed to send notice: ' + err.message, 'alert');
+      }
+    });
+  }
+
+  // Keyboard shortcut Ctrl+K to search
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      switchTab('overview');
+      const searchInput = document.getElementById('client-search-input');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  });
 });
+
 
 

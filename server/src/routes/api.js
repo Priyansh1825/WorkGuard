@@ -59,6 +59,78 @@ router.put('/clients/:id/profile', (req, res) => {
   res.json({ success: true, client });
 });
 
+router.post('/clients/:id/message', (req, res) => {
+  const { title, message } = req.body || {};
+  const broadcastMsg = req.app.get('sendClientMessage');
+  if (broadcastMsg) {
+    broadcastMsg(req.params.id, { title, message });
+  }
+  res.json({ success: true, message: 'Message queued for dispatch' });
+});
+
+router.post('/clients/:id/capture', (req, res) => {
+  const triggerCapture = req.app.get('requestInstantScreenshot');
+  if (triggerCapture) {
+    triggerCapture(req.params.id);
+  }
+  res.json({ success: true, message: 'Instant capture triggered' });
+});
+
+// --- Export Endpoints ---
+router.get('/export/csv', (req, res) => {
+  try {
+    const clients = db.getClients();
+    const stats = db.getStats();
+    
+    let csv = 'Workstation ID,Employee Name,Department,Hostname,IP Address,Status,Active Application,Foreground Window,Total Screenshots,Last Seen\n';
+    clients.forEach(c => {
+      csv += `"${c.id}","${c.employee_name || ''}","${c.department || 'General'}","${c.hostname}","${c.ip}","${c.status}","${c.current_app || ''}","${(c.current_window || '').replace(/"/g, '""')}","${c.total_screenshots || 0}","${c.last_seen || ''}"\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="workguard-fleet-report-${new Date().toISOString().split('T')[0]}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// --- Analytics Endpoints ---
+router.get('/analytics', (req, res) => {
+  try {
+    const clients = db.getClients();
+    const appCounts = {};
+    const deptCounts = {};
+    let totalOnline = 0;
+
+    clients.forEach(c => {
+      if (c.status === 'online') totalOnline++;
+      const app = c.current_app || 'Idle';
+      appCounts[app] = (appCounts[app] || 0) + 1;
+      const dept = c.department || 'General';
+      deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+    });
+
+    const topApps = Object.entries(appCounts)
+      .map(([name, count]) => ({ name, count, percent: Math.round((count / (clients.length || 1)) * 100) }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+
+    const departments = Object.entries(deptCounts)
+      .map(([name, count]) => ({ name, count }));
+
+    res.json({
+      success: true,
+      total_clients: clients.length,
+      total_online: totalOnline,
+      top_apps: topApps,
+      departments
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // --- Screenshots Endpoints ---
 router.post('/screenshots/upload', upload.single('screenshot'), async (req, res) => {
   try {

@@ -143,6 +143,13 @@ function connectToServer() {
           await takeSilentScreenshot();
           break;
 
+        case 'ADMIN_NOTIFICATION':
+          console.log(`[Admin Notice] ${msg.title}: ${msg.message}`);
+          if (uiServer) {
+            uiServer.broadcastNotification(msg.message, msg.title);
+          }
+          break;
+
         default:
           break;
       }

@@ -39,6 +39,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
           <span>Screenshots</span>
         </button>
+        <button class="nav-item" data-tab="analytics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          <span>Productivity & Apps</span>
+        </button>
         <button class="nav-item" data-tab="policies">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
           <span>Whitelists & Rules</span>
@@ -77,6 +81,13 @@
         </div>
         <div class="topbar-actions">
           <div class="time-clock" id="live-clock">--:--:--</div>
+          <button class="btn btn-secondary btn-sm" id="btn-broadcast-msg" title="Send Direct Message / Notice to Employees">
+            <span>💬 Broadcast Notice</span>
+          </button>
+          <a href="/api/export/csv" class="btn btn-secondary btn-sm" id="btn-export-csv" title="Export Fleet Audit CSV">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span>Export CSV</span>
+          </a>
           <button class="btn btn-secondary btn-sm" id="btn-theme-toggle" title="Switch Theme (Light / Dark Mode)">
             <span id="theme-icon">☀️</span>
             <span id="theme-text">Light Mode</span>
@@ -292,7 +303,79 @@
         </div>
       </section>
 
-      <!-- TAB 4: WHITELISTS & POLICY RULES -->
+      <!-- TAB: PRODUCTIVITY & APPS ANALYTICS -->
+      <section class="tab-content" id="tab-analytics">
+        <div class="hero-proof-banner" style="margin-bottom: 24px;">
+          <h2 class="hero-proof-headline">Workforce Productivity & Application Metrics</h2>
+          <p class="hero-proof-sub">Real-time breakdown of active programs, department distribution, and focus allocation across your company network.</p>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom: 24px;">
+          <div class="stat-card">
+            <div class="stat-icon emerald">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="stat-data">
+              <span class="stat-label">Productive App Usage</span>
+              <h3 class="stat-value" id="analytics-productive-score">94%</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon indigo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            </div>
+            <div class="stat-data">
+              <span class="stat-label">Top Monitored App</span>
+              <h3 class="stat-value" id="analytics-top-app" style="font-size: 1.3rem;">VS Code</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon cyan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="stat-data">
+              <span class="stat-label">Active Departments</span>
+              <h3 class="stat-value" id="analytics-dept-count">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon rose">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+            </div>
+            <div class="stat-data">
+              <span class="stat-label">Unwhitelisted Events</span>
+              <h3 class="stat-value" id="analytics-violations-count">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics Content Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+          <!-- Top Applications Ranking -->
+          <div class="glass-card" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+              <h3 style="font-family: 'Outfit'; font-size: 1.2rem; font-weight: 800;">🔥 Top Applications in Use</h3>
+              <span class="section-count">Live Fleet</span>
+            </div>
+            <div id="analytics-apps-list" style="display: flex; flex-direction: column; gap: 14px;">
+              <p style="color: var(--text-muted); font-size: 0.85rem;">No active telemetry data received yet.</p>
+            </div>
+          </div>
+
+          <!-- Department Workforce Distribution -->
+          <div class="glass-card" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+              <h3 style="font-family: 'Outfit'; font-size: 1.2rem; font-weight: 800;">🏢 Department Distribution</h3>
+              <span class="section-count">Organization</span>
+            </div>
+            <div id="analytics-depts-list" style="display: flex; flex-direction: column; gap: 14px;">
+              <p style="color: var(--text-muted); font-size: 0.85rem;">No department data registered yet.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: WHITELISTS & POLICY RULES -->
       <section class="tab-content" id="tab-policies">
         <div class="policy-container glass-card">
           <div class="policy-header">
@@ -545,6 +628,45 @@
           <div style="display: flex; gap: 10px; justify-content: flex-end;">
             <button type="button" class="btn btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
             <button type="submit" class="btn btn-primary" id="btn-save-edit-profile">💾 Save &amp; Sync Profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Direct Message / Broadcast Modal -->
+  <div class="modal" id="admin-message-modal">
+    <div class="modal-overlay" id="admin-message-overlay"></div>
+    <div class="modal-content glass-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3 id="admin-msg-modal-title">💬 Dispatch Employee Notice</h3>
+          <span class="modal-subtitle">Instant Toast &amp; Banner on Workstation Screen</span>
+        </div>
+        <button class="modal-close-btn" id="admin-msg-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 10px;">
+        <form id="form-admin-message" onsubmit="return false;">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Target Recipient:</label>
+            <select id="msg-target-select" class="select-dropdown" style="width: 100%; border-radius: 8px;">
+              <option value="ALL">📢 Broadcast to ALL Workstations</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Notice Title / Topic:</label>
+            <input type="text" id="msg-title-input" class="input-search" style="width: 100%; border-radius: 8px;" placeholder="e.g. Daily Standup Reminder / Policy Notice" value="Manager Notice" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Message Body:</label>
+            <textarea id="msg-body-input" class="input-search" style="width: 100%; height: 90px; border-radius: 8px; resize: vertical; padding: 10px;" placeholder="Type your message here..." required></textarea>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-message">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-send-message">🚀 Dispatch Now</button>
           </div>
         </form>
       </div>

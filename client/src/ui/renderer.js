@@ -146,6 +146,12 @@ async function fetchClientStatus() {
       updateBreakUI(data.isOnBreak);
     }
 
+    // Handle Admin Notifications / Broadcasts
+    if (data.notification && data.notification.id && data.notification.id !== window.lastNotifId) {
+      window.lastNotifId = data.notification.id;
+      showEmployeeToast(data.notification.title, data.notification.message);
+    }
+
     // Policies
     if (data.policy && Array.isArray(data.policy.allowed_apps) && data.policy.allowed_apps.length > 0) {
       allowedAppsList.innerHTML = data.policy.allowed_apps.map(app => `<span class="tag">${app}</span>`).join('');
@@ -156,8 +162,22 @@ async function fetchClientStatus() {
 
   } catch (err) {
     statusDot.className = 'status-dot offline';
-    connText.textContent = 'Agent Daemon Paused';
+    connText.textContent = 'Disconnected';
+    connBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+    connBadge.style.color = '#ef4444';
   }
+}
+
+function showEmployeeToast(title, msg) {
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #ffffff; padding: 14px 24px; border-radius: 9999px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); font-size: 13px; font-weight: 700; z-index: 99999; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.15); animation: toastPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);';
+  toast.innerHTML = `<span>💬 <strong>${title || 'Manager Notice'}:</strong> ${msg}</span>`;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 6000);
 }
 
 // Break Mode Toggle
