@@ -1140,7 +1140,7 @@ a.btn svg {
 }
 
 /* =======================================================
-   SCREENSHOT GALLERY & TIMELINE
+   SCREENSHOT GALLERY & TIMELINE GRID
 ======================================================= */
 .gallery-filter-bar {
   background: var(--bg-card);
@@ -1180,53 +1180,104 @@ a.btn svg {
   font-family: inherit;
 }
 
+.screenshots-grid,
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
 }
 
+.screenshot-item,
 .gallery-card {
   background: var(--bg-card);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   display: flex;
   flex-direction: column;
 }
 
+.screenshot-item:hover,
 .gallery-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
   border-color: var(--primary);
 }
 
+.screenshot-thumb-holder,
 .gallery-card-thumb {
-  height: 160px;
+  height: 180px;
   background: #0f172a;
   overflow: hidden;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+.screenshot-thumb-holder img,
 .gallery-card-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
   transition: transform 0.3s ease;
 }
 
+.screenshot-item:hover .screenshot-thumb-holder img,
 .gallery-card:hover .gallery-card-thumb img {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
+.screenshot-item-body,
 .gallery-card-info {
-  padding: 12px 16px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.screenshot-meta-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.screenshot-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.screenshot-app-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-pill);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.screenshot-window-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gallery-card-host {
