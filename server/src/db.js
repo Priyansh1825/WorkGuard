@@ -31,7 +31,7 @@ const defaultData = {
       ],
       work_hours_start: '00:00', // Configurable 24h format (e.g. 09:00)
       work_hours_end: '23:59',   // e.g. 18:00
-      capture_interval_sec: 15,  // Take silent screenshot every 15s (default)
+      capture_interval_sec: 600, // Take silent screenshot every 10 minutes (600s)
       stream_fps: 15,            // Default live stream FPS
       policy_mode: 'audit-alert',// 'audit-alert' (logs & alerts) or 'strict-block' (kills process)
       retention_days: 20,        // Auto-delete screenshots older than 15-20 days

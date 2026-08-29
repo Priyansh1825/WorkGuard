@@ -332,11 +332,13 @@
             <div class="rule-box">
               <label>Screenshot Interval:</label>
               <select id="policy-interval-select" class="select-dropdown">
-                <option value="5">Every 5 seconds (High Frequency)</option>
-                <option value="15" selected>Every 15 seconds (Balanced)</option>
+                <option value="15">Every 15 seconds (High Frequency)</option>
                 <option value="30">Every 30 seconds</option>
                 <option value="60">Every 1 minute</option>
                 <option value="300">Every 5 minutes</option>
+                <option value="600" selected>Every 10 minutes (Recommended)</option>
+                <option value="900">Every 15 minutes</option>
+                <option value="1800">Every 30 minutes</option>
               </select>
               <span class="rule-subtext">Captures screen silently without user interruption.</span>
             </div>
