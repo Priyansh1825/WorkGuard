@@ -10,10 +10,10 @@
       "current_app": "explorer.exe",
       "current_window": "Desktop",
       "cpu_usage": 23,
-      "ram_usage": 96,
+      "ram_usage": 89,
       "first_seen": "2026-08-27T06:21:37.504Z",
-      "last_seen": "2026-08-29T07:52:31.539Z",
-      "total_screenshots": 2232,
+      "last_seen": "2026-08-29T08:24:06.487Z",
+      "total_screenshots": 2256,
       "employee_name": "priya",
       "department": "General"
     },
@@ -34,6 +34,246 @@
     }
   },
   "screenshots": [
+    {
+      "id": "059de6fc-ce76-4417-adbd-a1c8e1405459",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991835345.jpg",
+      "filename": "1787991835345.jpg",
+      "timestamp": "2026-08-29T08:23:55.341Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 227604
+    },
+    {
+      "id": "0ebc8ea1-2cbb-4e9d-97e6-596edf584f82",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991820335.jpg",
+      "filename": "1787991820335.jpg",
+      "timestamp": "2026-08-29T08:23:40.332Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 210197
+    },
+    {
+      "id": "9edd68f0-ef41-46be-bd75-e171ba765a87",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991805431.jpg",
+      "filename": "1787991805431.jpg",
+      "timestamp": "2026-08-29T08:23:25.422Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 105172
+    },
+    {
+      "id": "7bd9b90c-14b2-4af7-98c5-80d39f8a053e",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991790333.jpg",
+      "filename": "1787991790333.jpg",
+      "timestamp": "2026-08-29T08:23:10.329Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 228764
+    },
+    {
+      "id": "8bccc553-4af6-4603-bc9a-0c5645ae8d86",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991775363.jpg",
+      "filename": "1787991775363.jpg",
+      "timestamp": "2026-08-29T08:22:55.357Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 190861
+    },
+    {
+      "id": "12b777e6-562d-4814-82f9-fd4d4ace1bb7",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991760352.jpg",
+      "filename": "1787991760352.jpg",
+      "timestamp": "2026-08-29T08:22:40.349Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 191117
+    },
+    {
+      "id": "485bfed6-751e-49ef-a3a3-20caae9d751d",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991745360.jpg",
+      "filename": "1787991745360.jpg",
+      "timestamp": "2026-08-29T08:22:25.354Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 190962
+    },
+    {
+      "id": "2dab25fb-709a-4247-9def-34845d0ea48c",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991730386.jpg",
+      "filename": "1787991730386.jpg",
+      "timestamp": "2026-08-29T08:22:10.368Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 202383
+    },
+    {
+      "id": "6b74105c-d4f6-4fc5-85f7-e7e0388039b2",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991715326.jpg",
+      "filename": "1787991715326.jpg",
+      "timestamp": "2026-08-29T08:21:55.322Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 202241
+    },
+    {
+      "id": "dc22f750-a074-4f40-9523-d3230dca49af",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991700325.jpg",
+      "filename": "1787991700325.jpg",
+      "timestamp": "2026-08-29T08:21:40.321Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 202242
+    },
+    {
+      "id": "c9ed0e02-6dc5-41d1-912d-cecf88ef8c45",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991685344.jpg",
+      "filename": "1787991685344.jpg",
+      "timestamp": "2026-08-29T08:21:25.340Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 202367
+    },
+    {
+      "id": "8f193cff-ce86-47cc-94fb-46a949752809",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991670976.jpg",
+      "filename": "1787991670976.jpg",
+      "timestamp": "2026-08-29T08:21:10.950Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 182627
+    },
+    {
+      "id": "bac8bc8b-6478-439d-bd93-9512c98f3b96",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991655449.jpg",
+      "filename": "1787991655449.jpg",
+      "timestamp": "2026-08-29T08:20:55.442Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 182977
+    },
+    {
+      "id": "1c6c702c-1f45-43a1-be27-83af80699515",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991640762.jpg",
+      "filename": "1787991640762.jpg",
+      "timestamp": "2026-08-29T08:20:40.757Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 202585
+    },
+    {
+      "id": "f3b07cc6-32a5-424f-845a-54adbab33b1c",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991625930.jpg",
+      "filename": "1787991625930.jpg",
+      "timestamp": "2026-08-29T08:20:25.925Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 202590
+    },
+    {
+      "id": "d5ca03d9-5cab-40a5-8006-c3b4e28e4270",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991611523.jpg",
+      "filename": "1787991611523.jpg",
+      "timestamp": "2026-08-29T08:20:11.035Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 202593
+    },
+    {
+      "id": "49969ddd-1113-4ba6-a94f-6492fd14486d",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991595684.jpg",
+      "filename": "1787991595684.jpg",
+      "timestamp": "2026-08-29T08:19:55.677Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 199042
+    },
+    {
+      "id": "fb0dab10-4e03-44a1-89ef-6925b8d9da1e",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991580777.jpg",
+      "filename": "1787991580777.jpg",
+      "timestamp": "2026-08-29T08:19:40.751Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 196956
+    },
+    {
+      "id": "a982067f-3be4-4226-8bbc-207e7be54d94",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991565689.jpg",
+      "filename": "1787991565689.jpg",
+      "timestamp": "2026-08-29T08:19:25.680Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 201012
+    },
+    {
+      "id": "c7ef4ed4-b2df-4776-b974-ac520a211cb4",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991550781.jpg",
+      "filename": "1787991550781.jpg",
+      "timestamp": "2026-08-29T08:19:10.744Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 194601
+    },
+    {
+      "id": "91c78532-1ea3-459e-b3ce-4c21d4ca73da",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991535683.jpg",
+      "filename": "1787991535683.jpg",
+      "timestamp": "2026-08-29T08:18:55.681Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 220682
+    },
+    {
+      "id": "8720d569-e224-47be-8e43-747bfbc4c991",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991520716.jpg",
+      "filename": "1787991520716.jpg",
+      "timestamp": "2026-08-29T08:18:40.715Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 215932
+    },
+    {
+      "id": "0283faad-d1ea-42c4-9a2d-c37491c8863c",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991505725.jpg",
+      "filename": "1787991505725.jpg",
+      "timestamp": "2026-08-29T08:18:25.722Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 127579
+    },
+    {
+      "id": "387b1c04-4b24-4218-8097-8bdbb2342f10",
+      "client_id": "client-er6e8b7",
+      "filepath": "/screenshots-raw/client-er6e8b7/2026-08-29/1787991490123.jpg",
+      "filename": "1787991490123.jpg",
+      "timestamp": "2026-08-29T08:18:01.272Z",
+      "active_app": "explorer.exe",
+      "active_window": "Desktop",
+      "file_size": 126762
+    },
     {
       "id": "1803224e-df78-4379-9b1d-4b1caceb9b6d",
       "client_id": "client-er6e8b7",

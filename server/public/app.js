@@ -381,35 +381,54 @@ function renderFleetOverview() {
   emptyState.style.display = 'none';
   container.innerHTML = '';
 
-  filtered.forEach(client => {
+  filtered.forEach((client, idx) => {
     const isOnline = client.status === 'online';
     const card = document.createElement('div');
     card.className = 'client-card';
     const empName = client.employee_name || client.username || 'Employee';
     const empDept = client.department || 'General';
+    
+    // Generate initials
+    const initials = empName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'EM';
+    
+    // Curated accent color tones
+    const colorTones = [
+      { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' }, // Blue
+      { bg: '#ecfdf5', text: '#047857', border: '#a7f3d0' }, // Sage green
+      { bg: '#fffbeb', text: '#b45309', border: '#fde68a' }, // Warm sand
+      { bg: '#f5f3ff', text: '#6d28d9', border: '#ddd6fe' }, // Lavender
+      { bg: '#fff1f2', text: '#be123c', border: '#fecdd3' }  // Rose
+    ];
+    const tone = colorTones[idx % colorTones.length];
 
     card.innerHTML = `
       <div class="client-card-header">
         <div class="client-identity">
           <div class="emp-title-wrap">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: ${tone.bg}; color: ${tone.text}; border: 1px solid ${tone.border}; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0;">
+              ${initials}
+            </div>
             <h3 class="emp-card-name" onclick="openAdminEditProfileModal('${client.id}')" title="Click to rename employee">${empName}</h3>
             <button class="emp-edit-btn" onclick="openAdminEditProfileModal('${client.id}')" title="Change Employee Name & Department">
-              ✏️ Edit Name
+              ✏️
             </button>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-            <span class="emp-card-dept">${empDept}</span>
-            <span class="emp-card-host">${client.hostname} (${client.ip})</span>
+            <span class="emp-card-dept" style="background: ${tone.bg}; color: ${tone.text}; border-color: ${tone.border};">${empDept}</span>
+            <span class="emp-card-host">${client.hostname} • ${client.ip}</span>
           </div>
         </div>
         <div class="online-tag ${isOnline ? '' : 'offline'}">
           <span class="dot"></span> ${isOnline ? 'ONLINE' : 'OFFLINE'}
         </div>
       </div>
-      <div class="client-preview-holder" onclick="openLiveStreamFor('${client.id}')">
+      <div class="client-preview-holder" onclick="openLiveStreamFor('${client.id}')" style="position: relative;">
         <div class="client-preview-placeholder">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
-          <span>Click to Monitor Screen</span>
+          <span>Click for 60 FPS Live Monitor</span>
+        </div>
+        <div style="position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #0f172a; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: transform 0.2s;" title="Watch Live Stream">
+          ↗
         </div>
       </div>
       <div class="client-card-body">
