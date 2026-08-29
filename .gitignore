@@ -17,3 +17,7 @@ client/bin/screengrab.exe
 Thumbs.db
 .vscode/
 .idea/
+
+# Local personal scripts
+stop-all-workguard.bat
+stop-all.bat
