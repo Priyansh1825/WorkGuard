@@ -826,13 +826,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Theme Toggle Management
+  const btnThemeToggle = document.getElementById('btn-theme-toggle');
+  if (btnThemeToggle) {
+    btnThemeToggle.addEventListener('click', toggleTheme);
+  }
+
   // Initial Boot
+  initTheme();
   initWebSocket();
   fetchClients();
   fetchStats();
   fetchPolicy();
   fetchLogs();
 });
+
+// Theme Management
+function initTheme() {
+  const savedTheme = localStorage.getItem('workguard_theme') || 'light';
+  applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('workguard_theme', theme);
+  const icon = document.getElementById('theme-icon');
+  const text = document.getElementById('theme-text');
+  if (icon && text) {
+    if (theme === 'light') {
+      icon.textContent = '☀️';
+      text.textContent = 'Light Mode';
+    } else {
+      icon.textContent = '🌙';
+      text.textContent = 'Dark Mode';
+    }
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  showToast(`Switched to ${next === 'light' ? 'Light' : 'Dark'} Mode`, 'info');
+}
 
 // Phone Connect Modal Open & QR Generation
 function openPhoneModal() {
