@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace WorkGuardSandbox
@@ -28,14 +27,12 @@ namespace WorkGuardSandbox
                 }
                 else
                 {
-                    // Fallback direct execution
+                    // Fallback to standalone dist packages if run from build directory
                     string adminExe = Path.Combine(baseDir, "dist", "WorkGuard-Admin-Station", "WorkGuard-Admin.exe");
-                    string clientExe = Path.Combine(baseDir, "dist", "WorkGuard-Client-Agent", "Employee-Hub.exe");
-                    string inspectorExe = Path.Combine(baseDir, "dist", "WorkGuard-Inspector", "WorkGuard-Inspector.exe");
+                    string clientExe = Path.Combine(baseDir, "dist", "WorkGuard-Client-Agent", "WorkGuard-Client.exe");
 
                     if (File.Exists(adminExe)) Process.Start(adminExe);
                     if (File.Exists(clientExe)) Process.Start(clientExe);
-                    if (File.Exists(inspectorExe)) Process.Start(inspectorExe);
                 }
             }
             catch (Exception ex)
