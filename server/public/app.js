@@ -391,11 +391,16 @@ function renderFleetOverview() {
     card.innerHTML = `
       <div class="client-card-header">
         <div class="client-identity">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-main);">${empName}</h3>
-            <span class="tag" style="background: rgba(79, 70, 229, 0.12); color: #818cf8; border: 1px solid rgba(79, 70, 229, 0.25); font-size: 11px; padding: 2px 6px; border-radius: 4px;">${empDept}</span>
+          <div class="emp-title-wrap">
+            <h3 class="emp-card-name" onclick="openAdminEditProfileModal('${client.id}')" title="Click to rename employee">${empName}</h3>
+            <button class="emp-edit-btn" onclick="openAdminEditProfileModal('${client.id}')" title="Change Employee Name & Department">
+              ✏️ Edit Name
+            </button>
           </div>
-          <span style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${client.hostname} • ${client.ip}</span>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+            <span class="emp-card-dept">${empDept}</span>
+            <span class="emp-card-host">${client.hostname} (${client.ip})</span>
+          </div>
         </div>
         <div class="online-tag ${isOnline ? '' : 'offline'}">
           <span class="dot"></span> ${isOnline ? 'ONLINE' : 'OFFLINE'}

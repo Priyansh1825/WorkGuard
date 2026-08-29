@@ -506,18 +506,79 @@ body {
   padding: 16px 18px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-card);
 }
 
-.client-identity h3 {
-  font-size: 1rem;
+.client-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.emp-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.emp-card-name {
+  font-size: 1.05rem;
   font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.3px;
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
-.client-identity span {
-  font-size: 0.75rem;
+.emp-card-name:hover {
+  color: var(--primary);
+}
+
+.emp-edit-btn {
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-subtle);
   color: var(--text-muted);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.emp-edit-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: scale(1.03);
+}
+
+.emp-card-dept {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  width: fit-content;
+}
+
+.emp-card-host {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 2px;
 }
 
 .online-tag {
@@ -527,9 +588,10 @@ body {
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   background: var(--emerald-light);
   color: var(--emerald);
+  flex-shrink: 0;
 }
 
 .online-tag.offline {
