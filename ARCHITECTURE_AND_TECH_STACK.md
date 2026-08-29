@@ -17,12 +17,26 @@ A comprehensive technical deep-dive into **how WorkGuard works**, **what technol
 +------------------------------------+                            +------------------------------------+
 | 🖥️ Electron Desktop GUI            |    UDP Broadcast Beacon    | ⚙️ Silent Background Daemon         |
 | 🌐 Embedded Express REST API       | ◄========================► | 🔍 UDP Auto-Discovery Receiver     |
-| 🔌 WebSocket Streaming Relay Hub   |          Port 38281        | 📸 Win32 GDI+ Screen Grabber (.exe)|
-| 💾 Local Database & Storage Manager|                            | 💾 Resilient Offline Disk Buffer   |
-| 🧹 Auto-Retention Purge Engine     |      HTTP / WS Relay       | ⏱️ Employee Hub Status UI (Widget) |
-| ☁️ Cloud URL Forwarder (Optional)  | ◄────────────────────────► | 🛡️ App & Web Policy Enforcer       |
-| 📥 Windows System Tray Daemon      |          Port 3000         | ☕ Break Mode Suspend Controller   |
-+------------------------------------+                            +------------------------------------+
+| 🔌 WebSocket Streaming Relay Hub   |          Port 38281        | 👤 1st-Time Setup (Name & Dept)    |
+| 👥 Employee Profile Remote Editor  |                            | 🔒 Locked Profile Enforcer         |
+| 💾 Local Database & Storage Manager|                            | 📸 Win32 GDI+ Screen Grabber (.exe)|
+| 🧹 Auto-Retention Purge Engine     |      HTTP / WS Relay       | 💾 Resilient Offline Disk Buffer   |
+| ☁️ Cloud URL Forwarder (Optional)  | ◄────────────────────────► | ⏱️ Employee Hub Status UI (Widget) |
+| 📥 Windows System Tray Daemon      |          Port 3000         | 🛡️ App & Web Policy Enforcer       |
++------------------------------------+                            | ☕ Break Mode Suspend Controller   |
+                  ▲                                               +------------------------------------+
+                  │                                                                 ▲
+                  └───────────────────────────────┐                                 │
+                                                  ▼                                 │
+                                   +------------------------------------+           │
+                                   |    WORKGUARD NETWORK INSPECTOR     |           │
+                                   |      (System Diagnostics Tool)     |           │
+                                   +------------------------------------+           │
+                                   | 🩺 Multi-Point Health Scanner      |           │
+                                   | 📊 Port 3000 / 38281 / 38282 Probe | ──────────┘
+                                   | 👥 Admin vs. Employee Role Monitor |
+                                   | 🔍 Automated Issue & Fix Resolver  |
+                                   +------------------------------------+
 ```
 
 ---

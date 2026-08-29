@@ -52,6 +52,33 @@ class ClientUIServer {
     }
 
     // API Routes
+    if (pathname === '/api/profile' && req.method === 'GET') {
+      const profile = this.agent.getProfile ? this.agent.getProfile() : { employee_name: '', department: '' };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(profile));
+    }
+
+    if (pathname === '/api/profile' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (this.agent.saveProfile) {
+            const updated = this.agent.saveProfile(parsed.employee_name, parsed.department);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: true, profile: updated }));
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    }
+
     if (pathname === '/api/status' && req.method === 'GET') {
       const status = this.agent.getLiveStatus ? this.agent.getLiveStatus() : {};
       status.isOnBreak = this.isOnBreak;

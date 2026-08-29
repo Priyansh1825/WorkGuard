@@ -30,9 +30,11 @@ The **WorkGuard Admin Station** is a native Windows desktop software designed fo
 
 ## 3. How to Use the Admin Station Features
 
-### 📊 Fleet Overview
+### 📊 Fleet Overview & Department Filtering
 * Displays a live grid of all connected employee workstations.
-* Shows each machine's **Workstation Name**, **Username**, **Online/Offline Status**, **Current Active Application & Window Title**, and **Real-Time CPU/RAM Usage**.
+* Shows each machine's **Employee Full Name**, **Assigned Department**, **Hostname**, **IP Address**, **Online/Offline Status**, **Current Active Application & Window Title**, and **Real-Time CPU/RAM Usage**.
+* **Filter by Department**: Use the Department dropdown in the top bar to filter the fleet (e.g. *Engineering*, *Sales*, *Marketing*, *HR*).
+* **✏️ Remote Employee Profile Editing**: Click **"✏️ Edit"** on any workstation card to change the employee's name or department. Changes synchronize instantly to the employee's workstation hub.
 
 ### 🔴 Live Screen Monitor
 * Select any online workstation to watch their screen in real-time at 15–30 FPS with sub-second latency.
@@ -69,14 +71,12 @@ The **WorkGuard Admin Station** is a native Windows desktop software designed fo
 
 ---
 
-# PART 2: EMPLOYEE USER MANUAL (Client Workstations)
+# 💻 Part 2: Employee / Client Workstation Setup
 
-## 1. Overview
-The **WorkGuard Client Agent** is an endpoint productivity service running on employee computers. It includes an optional **Employee Hub UI** for work shift tracking, policy transparency, and break management.
+## 1. What is the Client Agent?
+The Client Agent is a lightweight, low-overhead background daemon that runs on employee workstations. It quietly captures periodic screenshots, tracks the active foreground program title, and connects to the manager's station automatically.
 
----
-
-## 2. Installation & Setup
+## 2. Installation & Setup (For Employee PCs)
 
 ### Step 1: Extract the Software
 1. Copy `WorkGuard-Client-Agent.zip` to the employee's computer.
@@ -88,12 +88,20 @@ The **WorkGuard Client Agent** is an endpoint productivity service running on em
    > *"WorkGuard Client Agent has been successfully installed! The agent is now running silently in the background and will auto-start with Windows."*
 3. **Zero Configuration Needed**: The agent will automatically discover the manager's Admin station over your office Wi-Fi/LAN without typing any IP addresses.
 
+### Step 3: First-Time Setup (Name & Department)
+1. When the Employee Hub opens for the first time, a prompt asks the employee for their **Full Name** (e.g. *Jane Smith*) and **Department** (e.g. *Engineering*).
+2. Once saved, the name and department are **permanently locked** on the employee's PC to prevent tampering.
+3. Only the **Administrator / Manager** can edit or reassign an employee's profile remotely.
+
 ---
 
 ## 3. How to Use the Employee Hub UI
 
 Employees can open their workstation hub at any time:
 * Double-click **`Employee-Hub.exe`** (or `Open-Employee-Hub.bat`).
+
+### 👤 Employee Profile Bar
+* Displays your name, department, and a `🔒 Managed by Admin` padlock indicator.
 
 ### ⏱️ Active Work Shift Timer
 * Automatically records your daily productive work time.
@@ -120,6 +128,23 @@ To remove the WorkGuard Client Agent from an employee machine:
 1. Open the `WorkGuard-Client-Agent` folder.
 2. Double-click **`Uninstall-WorkGuard-Agent.bat`**.
 3. The autostart Windows registry key and background processes will be completely removed.
+
+---
+
+# 🩺 Part 3: WorkGuard Network & Fleet Inspector (Diagnostics Tool)
+
+## 1. What is the Inspector?
+The **WorkGuard Inspector** (`WorkGuard-Inspector.exe` / `inspect-system.bat`) is an automated multi-point diagnostic tool designed to verify that your monitoring ecosystem is running with zero bottlenecks.
+
+## 2. What it Inspects:
+* **Port 3000 (Admin Server & WebSocket Relay)**: Measures API latency and confirms storage status.
+* **Port 38281 (UDP Discovery Beacon)**: Verifies that zero-config broadcasting is reaching the office network.
+* **Port 38282 (Employee Hub UI)**: Confirms that the client daemon is responding.
+* **Role Breakdown**: Shows who is the **Admin** (Manager PC name and IP) and who are the **Connected Employees** (Employee Names, Departments, and statuses).
+* **Automated Issue Detection**: Immediately diagnoses connection drops, firewall blocks, or offline buffering states and suggests 1-click fixes.
+
+## 3. How to Launch the Inspector:
+* Double-click **`WorkGuard-Inspector.exe`** (or `inspect-system.bat`) at any time.
 
 ---
 

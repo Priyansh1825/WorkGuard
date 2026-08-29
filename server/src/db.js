@@ -73,7 +73,7 @@ class Database {
 
   // --- Clients ---
   upsertClient(clientInfo) {
-    const { id, hostname, username, ip, os, current_app, current_window, cpu_usage, ram_usage } = clientInfo;
+    const { id, hostname, username, employee_name, department, ip, os, current_app, current_window, cpu_usage, ram_usage } = clientInfo;
     const now = new Date().toISOString();
     
     if (!this.data.clients[id]) {
@@ -81,6 +81,8 @@ class Database {
         id,
         hostname: hostname || 'Unknown-PC',
         username: username || 'Unknown',
+        employee_name: employee_name || username || 'Employee',
+        department: department || 'General',
         ip: ip || '127.0.0.1',
         os: os || 'Windows',
         status: 'online',
@@ -92,12 +94,14 @@ class Database {
         last_seen: now,
         total_screenshots: 0
       };
-      this.addLog(id, 'AGENT_CONNECTED', `Agent registered from ${hostname} (${ip})`);
+      this.addLog(id, 'AGENT_CONNECTED', `Agent registered: ${employee_name || username} from ${hostname} (${ip})`);
     } else {
       this.data.clients[id] = {
         ...this.data.clients[id],
         hostname: hostname || this.data.clients[id].hostname,
         username: username || this.data.clients[id].username,
+        employee_name: employee_name || this.data.clients[id].employee_name || username,
+        department: department || this.data.clients[id].department || 'General',
         ip: ip || this.data.clients[id].ip,
         status: 'online',
         current_app: current_app !== undefined ? current_app : this.data.clients[id].current_app,
@@ -107,6 +111,16 @@ class Database {
         last_seen: now
       };
     }
+    this.save();
+    return this.data.clients[id];
+  }
+
+  updateClientProfile(id, { employee_name, department }) {
+    if (!this.data.clients[id]) return null;
+    if (employee_name) this.data.clients[id].employee_name = employee_name.trim();
+    if (department) this.data.clients[id].department = department.trim();
+    this.data.clients[id].last_seen = new Date().toISOString();
+    this.addLog(id, 'PROFILE_UPDATED_BY_ADMIN', `Admin updated profile: Name="${this.data.clients[id].employee_name}", Dept="${this.data.clients[id].department}"`);
     this.save();
     return this.data.clients[id];
   }

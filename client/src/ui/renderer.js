@@ -19,6 +19,13 @@ const clientIdEl = document.getElementById('client-id');
 const hostUserEl = document.getElementById('host-user');
 const adminEndpointEl = document.getElementById('admin-endpoint');
 
+const displayEmpNameEl = document.getElementById('display-emp-name');
+const displayEmpDeptEl = document.getElementById('display-emp-dept');
+const onboardingModal = document.getElementById('onboarding-modal');
+const formOnboarding = document.getElementById('form-onboarding');
+const inputEmpName = document.getElementById('input-emp-name');
+const selectEmpDept = document.getElementById('select-emp-dept');
+
 const policyModal = document.getElementById('policy-modal');
 const btnOpenRules = document.getElementById('btn-open-rules');
 const btnCloseRules = document.getElementById('btn-close-rules');
@@ -26,6 +33,51 @@ const btnCloseRulesBottom = document.getElementById('btn-close-rules-bottom');
 const btnSyncNow = document.getElementById('btn-sync-now');
 const allowedAppsList = document.getElementById('allowed-apps-list');
 const allowedDomainsList = document.getElementById('allowed-domains-list');
+
+// Check Profile State
+async function checkEmployeeProfile() {
+  try {
+    const res = await fetch('/api/profile');
+    if (!res.ok) return;
+    const profile = await res.json();
+
+    if (profile.employee_name) {
+      displayEmpNameEl.textContent = profile.employee_name;
+      displayEmpDeptEl.textContent = profile.department || 'General';
+      if (onboardingModal) onboardingModal.classList.remove('active');
+    } else {
+      // First-time user needs setup
+      if (onboardingModal) onboardingModal.classList.add('active');
+    }
+  } catch (e) {
+    console.error('Failed to load profile:', e);
+  }
+}
+
+// Handle Onboarding Form Submit
+if (formOnboarding) {
+  formOnboarding.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = inputEmpName.value.trim();
+    const dept = selectEmpDept.value;
+    if (!name) return;
+
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_name: name, department: dept })
+      });
+      const data = await res.json();
+      displayEmpNameEl.textContent = name;
+      displayEmpDeptEl.textContent = dept;
+      onboardingModal.classList.remove('active');
+      fetchClientStatus();
+    } catch (err) {
+      alert('Failed to save profile: ' + err.message);
+    }
+  });
+}
 
 // Shift Timer Clock
 function formatTime(totalSec) {
@@ -60,6 +112,14 @@ async function fetchClientStatus() {
       connText.textContent = 'Buffering Offline';
       connBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
       connBadge.style.color = '#f59e0b';
+    }
+
+    // Update Identity if received from server
+    if (data.employeeName) {
+      displayEmpNameEl.textContent = data.employeeName;
+    }
+    if (data.department) {
+      displayEmpDeptEl.textContent = data.department;
     }
 
     // Update Telemetry
@@ -151,5 +211,7 @@ btnCloseRules.addEventListener('click', () => policyModal.classList.remove('acti
 btnCloseRulesBottom.addEventListener('click', () => policyModal.classList.remove('active'));
 
 // Initial Fetch & Interval
+checkEmployeeProfile();
 fetchClientStatus();
 setInterval(fetchClientStatus, 2000);
+

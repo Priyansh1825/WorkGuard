@@ -45,6 +45,20 @@ router.get('/clients/:id', (req, res) => {
   res.json({ success: true, client });
 });
 
+router.put('/clients/:id/profile', (req, res) => {
+  const { employee_name, department } = req.body || {};
+  const client = db.updateClientProfile(req.params.id, { employee_name, department });
+  if (!client) return res.status(404).json({ success: false, error: 'Client not found' });
+
+  // Broadcast update to connected agent daemon
+  const updateAgent = req.app.get('updateAgentProfile');
+  if (updateAgent) {
+    updateAgent(req.params.id, { employee_name: client.employee_name, department: client.department });
+  }
+
+  res.json({ success: true, client });
+});
+
 // --- Screenshots Endpoints ---
 router.post('/screenshots/upload', upload.single('screenshot'), async (req, res) => {
   try {

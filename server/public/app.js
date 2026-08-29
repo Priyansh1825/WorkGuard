@@ -352,10 +352,18 @@ function renderFleetOverview() {
   const container = document.getElementById('clients-grid');
   const emptyState = document.getElementById('clients-empty');
   const search = document.getElementById('client-search-input').value.toLowerCase();
+  const deptFilter = document.getElementById('filter-dept-select') ? document.getElementById('filter-dept-select').value : 'ALL';
 
   let filtered = state.clients;
+  
+  if (deptFilter && deptFilter !== 'ALL') {
+    filtered = filtered.filter(c => (c.department || 'General') === deptFilter);
+  }
+
   if (search) {
     filtered = filtered.filter(c => 
+      (c.employee_name && c.employee_name.toLowerCase().includes(search)) ||
+      (c.department && c.department.toLowerCase().includes(search)) ||
       c.hostname.toLowerCase().includes(search) ||
       c.username.toLowerCase().includes(search) ||
       c.ip.toLowerCase().includes(search) ||
@@ -377,11 +385,17 @@ function renderFleetOverview() {
     const isOnline = client.status === 'online';
     const card = document.createElement('div');
     card.className = 'client-card';
+    const empName = client.employee_name || client.username || 'Employee';
+    const empDept = client.department || 'General';
+
     card.innerHTML = `
       <div class="client-card-header">
         <div class="client-identity">
-          <h3>${client.hostname}</h3>
-          <span>${client.username} • ${client.ip}</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-main);">${empName}</h3>
+            <span class="tag" style="background: rgba(79, 70, 229, 0.12); color: #818cf8; border: 1px solid rgba(79, 70, 229, 0.25); font-size: 11px; padding: 2px 6px; border-radius: 4px;">${empDept}</span>
+          </div>
+          <span style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${client.hostname} • ${client.ip}</span>
         </div>
         <div class="online-tag ${isOnline ? '' : 'offline'}">
           <span class="dot"></span> ${isOnline ? 'ONLINE' : 'OFFLINE'}
@@ -419,6 +433,9 @@ function renderFleetOverview() {
         <button class="btn btn-secondary btn-sm" onclick="filterGalleryByClient('${client.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/></svg>
           Gallery
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="openAdminEditProfileModal('${client.id}')" title="Edit Employee Name & Department">
+          ✏️ Edit
         </button>
       </div>
     `;
@@ -910,4 +927,75 @@ function renderQrCode(text) {
   };
   container.appendChild(qrImg);
 }
+
+// Admin Edit Employee Profile Modal Functions
+function openAdminEditProfileModal(clientId) {
+  const client = state.clients.find(c => c.id === clientId);
+  if (!client) return;
+
+  document.getElementById('edit-client-id').value = client.id;
+  document.getElementById('edit-emp-name').value = client.employee_name || client.username || '';
+  document.getElementById('edit-emp-dept').value = client.department || 'Engineering & Development';
+  document.getElementById('admin-edit-modal-title').textContent = `✏️ Edit Profile: ${client.hostname}`;
+
+  const modal = document.getElementById('admin-edit-profile-modal');
+  if (modal) modal.classList.add('active');
+}
+
+function closeAdminEditProfileModal() {
+  const modal = document.getElementById('admin-edit-profile-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+// Wire up Edit Profile Form and Filter Listeners
+document.addEventListener('DOMContentLoaded', () => {
+  const editModalClose = document.getElementById('admin-edit-modal-close');
+  const editModalCancel = document.getElementById('btn-cancel-edit-profile');
+  const editModalOverlay = document.getElementById('admin-edit-profile-overlay');
+  const formAdminEdit = document.getElementById('form-admin-edit-profile');
+  const deptFilterSelect = document.getElementById('filter-dept-select');
+
+  if (editModalClose) editModalClose.addEventListener('click', closeAdminEditProfileModal);
+  if (editModalCancel) editModalCancel.addEventListener('click', closeAdminEditProfileModal);
+  if (editModalOverlay) editModalOverlay.addEventListener('click', closeAdminEditProfileModal);
+
+  if (deptFilterSelect) {
+    deptFilterSelect.addEventListener('change', renderFleetOverview);
+  }
+
+  if (formAdminEdit) {
+    formAdminEdit.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const clientId = document.getElementById('edit-client-id').value;
+      const empName = document.getElementById('edit-emp-name').value.trim();
+      const dept = document.getElementById('edit-emp-dept').value;
+
+      if (!clientId || !empName) return;
+
+      const saveBtn = document.getElementById('btn-save-edit-profile');
+      saveBtn.textContent = 'Saving...';
+
+      try {
+        const res = await fetch(`/api/clients/${clientId}/profile`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employee_name: empName, department: dept })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Profile updated for ${empName} (${dept})`, 'success');
+          closeAdminEditProfileModal();
+          fetchClients();
+        } else {
+          showToast(`Error: ${data.error}`, 'alert');
+        }
+      } catch (err) {
+        showToast(`Failed to update profile: ${err.message}`, 'alert');
+      } finally {
+        saveBtn.textContent = '💾 Save & Sync Profile';
+      }
+    });
+  }
+});
+
 

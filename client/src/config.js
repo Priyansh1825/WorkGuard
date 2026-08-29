@@ -56,10 +56,26 @@ if (!clientId) {
   } catch (e) {}
 }
 
+// Profile file for employee onboarding
+const PROFILE_FILE = path.join(DATA_DIR, 'profile.json');
+let employeeName = '';
+let department = '';
+
+try {
+  if (fs.existsSync(PROFILE_FILE)) {
+    const p = JSON.parse(fs.readFileSync(PROFILE_FILE, 'utf8'));
+    employeeName = p.employee_name || '';
+    department = p.department || '';
+  }
+} catch (e) {}
+
 const config = {
   CLIENT_ID: clientId,
   HOSTNAME: os.hostname(),
   USERNAME: os.userInfo ? os.userInfo().username : 'Employee',
+  EMPLOYEE_NAME: employeeName || (os.userInfo ? os.userInfo().username : 'Employee'),
+  DEPARTMENT: department || 'General',
+  PROFILE_FILE: PROFILE_FILE,
   OS_TYPE: os.type() + ' ' + os.release(),
   AUTO_DISCOVER: autoDiscover,
   ENABLE_UI: enableUi,
@@ -74,6 +90,17 @@ const config = {
   setServerEndpoint(host, port) {
     this.SERVER_HOST = host;
     if (port) this.SERVER_PORT = port;
+  },
+  setProfile(name, dept) {
+    this.EMPLOYEE_NAME = name || this.EMPLOYEE_NAME;
+    this.DEPARTMENT = dept || this.DEPARTMENT;
+    try {
+      fs.writeFileSync(PROFILE_FILE, JSON.stringify({
+        employee_name: this.EMPLOYEE_NAME,
+        department: this.DEPARTMENT,
+        updated_at: new Date().toISOString()
+      }, null, 2), 'utf8');
+    } catch (e) {}
   },
   BUFFER_DIR: DATA_DIR,
   DEFAULT_CAPTURE_INTERVAL_SEC: 600,

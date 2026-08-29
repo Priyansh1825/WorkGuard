@@ -140,8 +140,21 @@
             <h2>Monitored Workstations</h2>
             <span class="section-count" id="clients-count-badge">0 Devices</span>
           </div>
-          <div class="filter-controls">
-            <input type="text" class="input-search" id="client-search-input" placeholder="Search by hostname, IP, user...">
+          <div class="filter-controls" style="display: flex; gap: 10px; align-items: center;">
+            <select id="filter-dept-select" class="select-dropdown" style="width: auto; min-width: 170px; padding: 7px 12px; font-size: 13px;">
+              <option value="ALL">🏢 All Departments</option>
+              <option value="Engineering & Development">Engineering</option>
+              <option value="Product & Design">Product & Design</option>
+              <option value="Sales & Business">Sales & Business</option>
+              <option value="Marketing & Growth">Marketing</option>
+              <option value="Human Resources (HR)">HR</option>
+              <option value="Finance & Accounts">Finance</option>
+              <option value="Customer Support">Customer Support</option>
+              <option value="Operations & Logistics">Operations</option>
+              <option value="Quality Assurance (QA)">QA</option>
+              <option value="Management">Management</option>
+            </select>
+            <input type="text" class="input-search" id="client-search-input" placeholder="Search by name, dept, IP, hostname...">
           </div>
         </div>
 
@@ -471,6 +484,55 @@
             </ol>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Edit Employee Profile Modal -->
+  <div class="modal" id="admin-edit-profile-modal">
+    <div class="modal-overlay" id="admin-edit-profile-overlay"></div>
+    <div class="modal-content glass-card" style="max-width: 460px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3 id="admin-edit-modal-title">✏️ Edit Employee Profile</h3>
+          <span class="modal-subtitle">Modify Employee Name &amp; Department Remotely</span>
+        </div>
+        <button class="modal-close-btn" id="admin-edit-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 10px;">
+        <form id="form-admin-edit-profile" onsubmit="return false;">
+          <input type="hidden" id="edit-client-id" value="">
+          
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Employee Full Name:</label>
+            <input type="text" id="edit-emp-name" class="input-search" style="width: 100%; border-radius: 8px;" placeholder="e.g. Sarah Connor" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Assigned Department:</label>
+            <select id="edit-emp-dept" class="select-dropdown" style="width: 100%; border-radius: 8px;">
+              <option value="Engineering & Development">Engineering & Development</option>
+              <option value="Product & Design">Product & Design</option>
+              <option value="Sales & Business">Sales & Business</option>
+              <option value="Marketing & Growth">Marketing & Growth</option>
+              <option value="Human Resources (HR)">Human Resources (HR)</option>
+              <option value="Finance & Accounts">Finance & Accounts</option>
+              <option value="Customer Support">Customer Support</option>
+              <option value="Operations & Logistics">Operations & Logistics</option>
+              <option value="Quality Assurance (QA)">Quality Assurance (QA)</option>
+              <option value="Management">Management</option>
+            </select>
+          </div>
+
+          <div style="background: rgba(79, 70, 229, 0.08); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: 8px; padding: 10px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 16px;">
+            ℹ️ Changes will immediately synchronize to the employee's workstation hub and reflect across all screenshots.
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-edit-profile">💾 Save &amp; Sync Profile</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

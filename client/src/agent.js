@@ -93,6 +93,8 @@ function connectToServer() {
       client_id: config.CLIENT_ID,
       hostname: config.HOSTNAME,
       username: config.USERNAME,
+      employee_name: config.EMPLOYEE_NAME,
+      department: config.DEPARTMENT,
       os: config.OS_TYPE,
       current_app: sys.processName,
       current_window: sys.windowTitle,
@@ -114,6 +116,13 @@ function connectToServer() {
             currentPolicy = { ...currentPolicy, ...msg.policy };
             console.log(`[Policy] Updated: Interval=${currentPolicy.capture_interval_sec}s, Mode=${currentPolicy.policy_mode}`);
             resetCaptureTimer();
+          }
+          break;
+
+        case 'UPDATE_EMPLOYEE_PROFILE':
+          if (msg.employee_name || msg.department) {
+            config.setProfile(msg.employee_name, msg.department);
+            console.log(`[Agent] Profile updated remotely: Name="${config.EMPLOYEE_NAME}", Department="${config.DEPARTMENT}"`);
           }
           break;
 
@@ -277,12 +286,34 @@ function setBreakMode(onBreak) {
   }
 }
 
+function getProfile() {
+  return {
+    employee_name: config.EMPLOYEE_NAME,
+    department: config.DEPARTMENT,
+    is_configured: !!(config.EMPLOYEE_NAME && config.EMPLOYEE_NAME !== config.USERNAME)
+  };
+}
+
+function saveProfile(name, dept) {
+  config.setProfile(name, dept);
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'AGENT_PROFILE_UPDATE',
+      employee_name: config.EMPLOYEE_NAME,
+      department: config.DEPARTMENT
+    }));
+  }
+  return getProfile();
+}
+
 function getLiveStatus() {
   return {
     isConnected: ws && ws.readyState === WebSocket.OPEN,
     clientId: config.CLIENT_ID,
     hostname: config.HOSTNAME,
     username: config.USERNAME,
+    employeeName: config.EMPLOYEE_NAME,
+    department: config.DEPARTMENT,
     serverUrl: config.SERVER_HTTP_URL,
     currentApp: isEmployeeOnBreak ? '☕ On Break' : (lastSysInfo.processName || 'Desktop'),
     currentWindow: isEmployeeOnBreak ? 'Break Mode (Capture Paused)' : (lastSysInfo.windowTitle || 'Idle'),
@@ -298,6 +329,8 @@ if (config.ENABLE_UI) {
   clientUI = new ClientUIServer({
     getLiveStatus,
     setBreakMode,
+    getProfile,
+    saveProfile,
     flushOfflineQueue: () => offlineQueue.flushQueue()
   });
 

@@ -30,6 +30,15 @@
 
     <!-- Main Shift Timer & Status Card -->
     <div class="main-card">
+      <div class="employee-identity-bar">
+        <div class="emp-avatar">👤</div>
+        <div class="emp-details">
+          <div class="emp-name" id="display-emp-name">Employee User</div>
+          <div class="emp-dept-badge" id="display-emp-dept">General Department</div>
+        </div>
+        <span class="badge-locked" title="Name and Department are managed by the Administrator">🔒 Managed by Admin</span>
+      </div>
+
       <div class="timer-section">
         <span class="label">ACTIVE WORK SHIFT</span>
         <div class="timer-display" id="shift-timer">00:00:00</div>
@@ -78,11 +87,62 @@
       </div>
     </div>
 
+    <!-- First-Time Employee Onboarding Modal -->
+    <div class="policy-modal" id="onboarding-modal">
+      <div class="modal-content onboarding-content">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="brand-badge" style="width: 34px; height: 34px;">🚀</div>
+            <div>
+              <h3>Welcome to WorkGuard</h3>
+              <span style="font-size: 0.78rem; color: #94a3b8;">Employee Workstation Setup</span>
+            </div>
+          </div>
+        </div>
+        <p class="modal-desc" style="margin-bottom: 18px;">
+          Please enter your <strong>Full Name</strong> and select your <strong>Department</strong> so your workstation is properly recognized by the manager.
+        </p>
+
+        <form id="form-onboarding" onsubmit="return false;">
+          <div class="form-group">
+            <label for="input-emp-name">Your Full Name:</label>
+            <input type="text" id="input-emp-name" class="modal-input" placeholder="e.g. John Doe" required autofocus>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label for="select-emp-dept">Your Department:</label>
+            <select id="select-emp-dept" class="modal-input" required>
+              <option value="Engineering & Development" selected>Engineering & Development</option>
+              <option value="Product & Design">Product & Design</option>
+              <option value="Sales & Business">Sales & Business</option>
+              <option value="Marketing & Growth">Marketing & Growth</option>
+              <option value="Human Resources (HR)">Human Resources (HR)</option>
+              <option value="Finance & Accounts">Finance & Accounts</option>
+              <option value="Customer Support">Customer Support</option>
+              <option value="Operations & Logistics">Operations & Logistics</option>
+              <option value="Quality Assurance (QA)">Quality Assurance (QA)</option>
+              <option value="Management">Management</option>
+            </select>
+          </div>
+
+          <div class="onboarding-notice">
+            <span>🔒 <strong>Note:</strong> Once saved, your name and department will be locked and can only be updated by the Administrator.</span>
+          </div>
+
+          <div class="modal-footer" style="margin-top: 20px;">
+            <button type="submit" class="btn btn-primary" id="btn-save-onboarding" style="width: 100%; justify-content: center; padding: 12px;">
+              🚀 Save &amp; Start WorkShift
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Policy Modal / Section -->
     <div class="policy-modal" id="policy-modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>📋 Company Policy & Permitted Software</h3>
+          <h3>📋 Company Policy &amp; Permitted Software</h3>
           <button class="close-btn" id="btn-close-rules">&times;</button>
         </div>
         <p class="modal-desc">Software allowed for daily work productivity. Unauthorized apps may trigger alerts.</p>

@@ -62,6 +62,18 @@ class WebSocketServerHandler {
         log
       });
     });
+
+    this.app.set('updateAgentProfile', (clientId, profile) => {
+      const agentWs = this.agents.get(clientId);
+      if (agentWs && agentWs.readyState === WebSocket.OPEN) {
+        agentWs.send(JSON.stringify({
+          type: 'UPDATE_EMPLOYEE_PROFILE',
+          employee_name: profile.employee_name,
+          department: profile.department
+        }));
+      }
+      this.broadcastFleetUpdate();
+    });
   }
 
   handleMessage(ws, message, isBinary, req) {
@@ -96,6 +108,8 @@ class WebSocketServerHandler {
             id: data.client_id,
             hostname: data.hostname,
             username: data.username,
+            employee_name: data.employee_name,
+            department: data.department,
             ip: ip.replace('::ffff:', ''),
             os: data.os,
             current_app: data.current_app,
@@ -114,6 +128,17 @@ class WebSocketServerHandler {
 
           // Notify admins of updated fleet status
           this.broadcastFleetUpdate();
+          break;
+        }
+
+        case 'AGENT_PROFILE_UPDATE': {
+          if (ws.clientId) {
+            db.updateClientProfile(ws.clientId, {
+              employee_name: data.employee_name,
+              department: data.department
+            });
+            this.broadcastFleetUpdate();
+          }
           break;
         }
 
