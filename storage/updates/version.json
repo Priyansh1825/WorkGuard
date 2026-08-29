@@ -1,0 +1,8 @@
+{
+  "version": "1.2.0",
+  "release_notes": "Performance improvements, real-time telemetry optimization & zero-delay hardware screen capture.",
+  "released_at": "2026-08-29T10:45:54.727Z",
+  "bundle_size": 1072740,
+  "sha256": "242bb3e709c71b3976278ee589eba604caae9dd94a9cb7f54c6ba8c12bb2e48e",
+  "updated_at": "2026-08-29T10:45:55.296Z"
+}
