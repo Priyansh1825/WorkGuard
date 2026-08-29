@@ -66,7 +66,7 @@ function startServer(port = PORT) {
       console.log(`🚀 WorkGuard Admin Backend Coordinator Started`);
       console.log(`📡 Local Network Port:   ${port}`);
       console.log(`🔌 WebSocket Relay:      ws://localhost:${port}/ws`);
-      console.log(`📁 Screenshot Storage:   ${SCREENSHOTS_DIR}`);
+      console.log(`📁 Screenshot Storage:   ${storageManager.getLocalStorageDir()}`);
       console.log(`🧹 Auto-Cleanup Policy:  Active (Deletes > 15-20 Days)`);
       console.log(`=======================================================`);
       resolve({ server, port, app });
