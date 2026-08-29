@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs & deliverables
+dist/
+*.zip
+
+# Runtime storage & buffers
+server/storage/screenshots/
+client/storage_buffer/
+client/bin/screengrab.exe
+*.log
+
+# OS / IDE artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

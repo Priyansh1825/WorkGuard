@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorkGuard Admin | Desktop Monitoring Station</title>
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div class="brand-text">
+          <h2>WorkGuard</h2>
+          <span class="badge-offline">OFFLINE LAN MODE</span>
+        </div>
+        <button class="mobile-close-btn" id="mobile-sidebar-close">&times;</button>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Fleet Overview</span>
+        </button>
+        <button class="nav-item" data-tab="live-stream">
+          <div class="live-dot-pulse"></div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h5l2 8 5-16 2 8h6"/></svg>
+          <span>Live Monitor</span>
+        </button>
+        <button class="nav-item" data-tab="screenshots">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <span>Screenshots</span>
+        </button>
+        <button class="nav-item" data-tab="policies">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+          <span>Whitelists & Rules</span>
+        </button>
+        <button class="nav-item" data-tab="logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+          <span>Audit Logs</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="connection-status">
+          <span class="status-indicator online" id="ws-indicator"></span>
+          <div class="status-info">
+            <span class="status-title">Server Status</span>
+            <span class="status-desc" id="server-status-text">Connected (Port 3000)</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-sidebar-overlay"></div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="btn-icon mobile-hamburger" id="btn-hamburger" aria-label="Open navigation menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="page-title-area">
+            <h1 id="page-title">Fleet Overview</h1>
+            <p id="page-subtitle">Real-time endpoint activity and productivity metrics</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="time-clock" id="live-clock">--:--:--</div>
+          <button class="btn btn-accent btn-sm" id="btn-phone-connect" title="Open on Mobile / Scan QR">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg>
+            <span>📱 Mobile App</span>
+          </button>
+          <button class="btn btn-primary btn-sm" id="btn-pwa-install" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span>Install App</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-refresh-all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span>Sync</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- TAB 1: FLEET OVERVIEW -->
+      <section class="tab-content active" id="tab-overview">
+        <!-- Stat Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon indigo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            </div>
+            <div class="stat-data">
+              <span class="stat-label">Total Endpoints</span>
+              <h3 class="stat-value" id="stat-total-clients">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon emerald">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="stat-data">
+              <span class="stat-label">Active Online</span>
+              <h3 class="stat-value" id="stat-online-clients">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon cyan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            </div>
+            <div class="stat-data">
+              <span class="stat-label">Screenshots Today</span>
+              <h3 class="stat-value" id="stat-today-shots">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon rose">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+            </div>
+            <div class="stat-data">
+              <span class="stat-label">Rule Violations</span>
+              <h3 class="stat-value" id="stat-violations">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client Grid Header -->
+        <div class="section-header">
+          <div class="section-title">
+            <h2>Monitored Workstations</h2>
+            <span class="section-count" id="clients-count-badge">0 Devices</span>
+          </div>
+          <div class="filter-controls">
+            <input type="text" class="input-search" id="client-search-input" placeholder="Search by hostname, IP, user...">
+          </div>
+        </div>
+
+        <!-- Workstation Fleet Cards Grid -->
+        <div class="clients-grid" id="clients-grid">
+          <!-- Dynamically populated -->
+          <div class="empty-state" id="clients-empty">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            </div>
+            <h3>No Client Agents Connected Yet</h3>
+            <p>Launch the client agent application on employee machines to begin automatic silent monitoring.</p>
+            <div class="terminal-box">
+              <code>cd client &amp;&amp; npm start</code>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: LIVE SCREEN MONITOR -->
+      <section class="tab-content" id="tab-live-stream">
+        <div class="stream-layout">
+          <!-- Control Bar -->
+          <div class="stream-control-panel glass-card">
+            <div class="stream-selectors">
+              <div class="control-group">
+                <label>Select Workstation:</label>
+                <select id="stream-client-select" class="select-dropdown">
+                  <option value="">-- Choose Connected Endpoint --</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label>Stream Frame Rate:</label>
+                <select id="stream-fps-select" class="select-dropdown">
+                  <option value="10">10 FPS (Low Bandwidth)</option>
+                  <option value="15" selected>15 FPS (Recommended)</option>
+                  <option value="25">25 FPS (Smooth)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="stream-actions">
+              <button class="btn btn-primary" id="btn-toggle-stream" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Start Live Stream
+              </button>
+              <button class="btn btn-secondary" id="btn-instant-snap" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 4h-1.5l-1-2h-9l-1 2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>
+                Instant Screenshot
+              </button>
+              <button class="btn btn-icon" id="btn-fullscreen-stream" title="Toggle Fullscreen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Video Viewport -->
+          <div class="viewport-wrapper glass-card" id="stream-viewport-container">
+            <div class="stream-overlay-header">
+              <div class="live-tag" id="live-badge" style="display: none;">
+                <span class="live-dot"></span> LIVE
+              </div>
+              <div class="stream-meta" id="stream-meta-info">Ready to stream</div>
+            </div>
+
+            <div class="stream-canvas-holder">
+              <img id="stream-img-element" alt="Live Feed" style="display: none;">
+              <div class="stream-placeholder" id="stream-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+                <h3>Live Screen Monitor Idle</h3>
+                <p>Select a workstation from the dropdown above and click "Start Live Stream" to monitor in real time.</p>
+              </div>
+            </div>
+
+            <div class="stream-overlay-footer" id="stream-footer-info" style="display: none;">
+              <span id="footer-active-app">Active: Explorer</span>
+              <span id="footer-stream-fps">0 FPS</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: SCREENSHOT TIMELINE & GALLERY -->
+      <section class="tab-content" id="tab-screenshots">
+        <div class="gallery-filter-bar glass-card">
+          <div class="filter-group">
+            <label>Workstation:</label>
+            <select id="gallery-client-filter" class="select-dropdown">
+              <option value="all">All Workstations</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Date:</label>
+            <input type="date" id="gallery-date-filter" class="input-date">
+          </div>
+          <div class="filter-group">
+            <label>Search Window / App:</label>
+            <input type="text" id="gallery-search-input" class="input-search" placeholder="Filter by app name...">
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-open-storage-folder" style="display: none;" title="Open storage directory in Windows Explorer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              Open Folder
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-gallery">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="screenshots-grid" id="screenshots-grid">
+          <!-- Dynamically populated -->
+          <div class="empty-state" id="screenshots-empty">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            </div>
+            <h3>No Screenshots Captured Yet</h3>
+            <p>Automated silent screenshots will populate here according to the configured interval timer.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: WHITELISTS & POLICY RULES -->
+      <section class="tab-content" id="tab-policies">
+        <div class="policy-container glass-card">
+          <div class="policy-header">
+            <div>
+              <h2>Application & Website Whitelisting Policy</h2>
+              <p>Configure which applications and websites employees are permitted to use during business hours.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-save-policy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save &amp; Deploy to All Agents
+            </button>
+          </div>
+
+          <div class="policy-grid">
+            <!-- Left: App Whitelist -->
+            <div class="policy-card">
+              <div class="policy-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+                <h3>Allowed Applications (Executable Whitelist)</h3>
+              </div>
+              <p class="policy-hint">Only programs matching these executable names (.exe) or names are permitted.</p>
+              
+              <div class="tag-input-wrapper">
+                <input type="text" id="app-tag-input" placeholder="Type app name (e.g. figma.exe) and press Enter...">
+                <button class="btn btn-secondary btn-sm" id="btn-add-app-tag">+ Add</button>
+              </div>
+
+              <div class="tags-container" id="allowed-apps-tags">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
+
+            <!-- Right: Website Whitelist -->
+            <div class="policy-card">
+              <div class="policy-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <h3>Allowed Websites (Domain Whitelist)</h3>
+              </div>
+              <p class="policy-hint">Work-related domains permitted for employee browsing.</p>
+
+              <div class="tag-input-wrapper">
+                <input type="text" id="web-tag-input" placeholder="Type domain (e.g. notion.so) and press Enter...">
+                <button class="btn btn-secondary btn-sm" id="btn-add-web-tag">+ Add</button>
+              </div>
+
+              <div class="tags-container" id="allowed-domains-tags">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: Schedule and Operational Rules -->
+          <div class="policy-rules-row">
+            <div class="rule-box">
+              <label>Monitoring Work Hours:</label>
+              <div class="time-range-picker">
+                <input type="time" id="policy-work-start" value="09:00" class="input-time">
+                <span>to</span>
+                <input type="time" id="policy-work-end" value="18:00" class="input-time">
+              </div>
+              <span class="rule-subtext">Screenshots and live monitoring operate only within this window.</span>
+            </div>
+
+            <div class="rule-box">
+              <label>Screenshot Interval:</label>
+              <select id="policy-interval-select" class="select-dropdown">
+                <option value="5">Every 5 seconds (High Frequency)</option>
+                <option value="15" selected>Every 15 seconds (Balanced)</option>
+                <option value="30">Every 30 seconds</option>
+                <option value="60">Every 1 minute</option>
+                <option value="300">Every 5 minutes</option>
+              </select>
+              <span class="rule-subtext">Captures screen silently without user interruption.</span>
+            </div>
+
+            <div class="rule-box">
+              <label>Policy Enforcement Mode:</label>
+              <select id="policy-mode-select" class="select-dropdown">
+                <option value="audit-alert" selected>Audit &amp; Alert (Log violations without killing app)</option>
+                <option value="strict-block">Strict Block (Terminate unlisted apps immediately)</option>
+              </select>
+              <span class="rule-subtext">Choose how unauthorized activity is handled.</span>
+            </div>
+
+            <div class="rule-box">
+              <label>Screenshot Auto-Delete Retention:</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="policy-retention-select" class="select-dropdown" style="flex: 1;">
+                  <option value="15">Auto-delete after 15 days</option>
+                  <option value="20" selected>Auto-delete after 20 days (Recommended)</option>
+                  <option value="30">Auto-delete after 30 days</option>
+                  <option value="60">Auto-delete after 60 days</option>
+                  <option value="0">Keep forever (No auto-delete)</option>
+                </select>
+                <button class="btn btn-secondary btn-sm" id="btn-clean-now" title="Clean expired screenshots now" style="white-space: nowrap;">
+                  🧹 Clean Now
+                </button>
+              </div>
+              <span class="rule-subtext" id="retention-status-text">Screenshots older than 20 days are permanently purged automatically.</span>
+            </div>
+
+            <!-- Cloud Storage & Database URLs -->
+            <div class="rule-box" style="grid-column: span 2;">
+              <label>☁️ Cloud Storage Endpoint URL (Optional):</label>
+              <input type="text" id="setting-cloud-storage-url" class="select-dropdown" style="width: 100%; font-family: 'JetBrains Mono'; font-size: 0.82rem;" placeholder="Leave empty for local PC hard drive, or paste AWS S3 / Cloudflare R2 / Custom Cloud URL...">
+              <span class="rule-subtext">When provided, captured screenshots will be routed directly to your cloud storage bucket instead of local disk.</span>
+            </div>
+
+            <div class="rule-box" style="grid-column: span 2;">
+              <label>🗄️ Central Cloud Database URL (Optional):</label>
+              <input type="text" id="setting-cloud-db-url" class="select-dropdown" style="width: 100%; font-family: 'JetBrains Mono'; font-size: 0.82rem;" placeholder="Leave empty for local database.json, or paste postgres://... / mongodb+srv://...">
+              <span class="rule-subtext">When provided, employee logs and timeline metrics sync to your central cloud database.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: AUDIT LOGS -->
+      <section class="tab-content" id="tab-logs">
+        <div class="glass-card logs-panel">
+          <div class="logs-header">
+            <div>
+              <h2>Activity &amp; Violation Audit Log</h2>
+              <p>Chronological record of workstation connections, policy changes, and blocked actions.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-logs">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Refresh Logs
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Event Type</th>
+                  <th>Workstation / Client</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="logs-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Screenshot Modal Lightbox -->
+  <div class="modal" id="image-modal">
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal-content glass-card">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3 id="modal-client-name">Host: DESKTOP-123</h3>
+          <span class="modal-subtitle" id="modal-meta">2026-08-27 10:30:15 | Chrome</span>
+        </div>
+        <div class="modal-header-actions">
+          <a id="modal-download-link" class="btn btn-secondary btn-sm" download="screenshot.jpg" target="_blank">Download</a>
+          <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <img id="modal-image" src="" alt="Full Resolution Screenshot">
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Phone Connect & PWA QR Modal -->
+  <div class="modal" id="phone-modal">
+    <div class="modal-overlay" id="phone-modal-overlay"></div>
+    <div class="modal-content glass-card phone-modal-content">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3>📱 Open & Install on Android Phone</h3>
+          <span class="modal-subtitle">Direct Wi-Fi / LAN Mobile Companion App</span>
+        </div>
+        <button class="modal-close-btn" id="phone-modal-close">&times;</button>
+      </div>
+      <div class="modal-body phone-modal-body">
+        <div class="phone-connect-grid">
+          <div class="qr-box">
+            <div id="phone-qr-container" class="qr-canvas-wrapper"></div>
+            <span class="qr-subtext">Scan with your Phone Camera</span>
+          </div>
+          <div class="phone-instructions">
+            <h4>Quick Connection Steps:</h4>
+            <ol>
+              <li>Ensure your Android phone is connected to the same <strong>Wi-Fi</strong> network.</li>
+              <li>Open Chrome on your phone and navigate to:
+                <div class="code-badge-copy" id="phone-url-copy-box">
+                  <span id="phone-lan-url">http://192.168.2.136:3000</span>
+                  <button class="btn btn-secondary btn-xs" id="btn-copy-lan-url">Copy</button>
+                </div>
+              </li>
+              <li>In Chrome on your phone, tap <strong>"Install App"</strong> banner or tap <strong>⋮ (Menu) &rarr; "Add to Home screen" / "Install app"</strong>.</li>
+              <li>The WorkGuard app icon will appear on your home screen like a native Android APK!</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

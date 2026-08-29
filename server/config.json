@@ -1,0 +1,6 @@
+{
+  "storage_type": "local",
+  "cloud_storage_url": "",
+  "database_url": "",
+  "retention_days": 20
+}

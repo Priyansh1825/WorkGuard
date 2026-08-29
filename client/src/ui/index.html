@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorkGuard | Employee Workstation Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="client-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div>
+          <h1>WorkGuard</h1>
+          <span class="subtext">Employee Workstation Agent</span>
+        </div>
+      </div>
+      <div class="connection-badge" id="conn-badge">
+        <span class="status-dot online" id="status-dot"></span>
+        <span id="conn-text">Connected</span>
+      </div>
+    </header>
+
+    <!-- Main Shift Timer & Status Card -->
+    <div class="main-card">
+      <div class="timer-section">
+        <span class="label">ACTIVE WORK SHIFT</span>
+        <div class="timer-display" id="shift-timer">00:00:00</div>
+        <div class="timer-status">
+          <span class="badge-active" id="work-state-badge">🟢 Working (Monitoring Active)</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="action-buttons">
+        <button class="btn btn-break" id="btn-toggle-break">
+          <span class="btn-icon">☕</span>
+          <span id="break-btn-text">Take Break (Pause)</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-open-rules">
+          <span class="btn-icon">📋</span>
+          <span>View Policy Rules</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Grid -->
+    <div class="telemetry-grid">
+      <div class="stat-card">
+        <span class="stat-title">Active Program</span>
+        <div class="stat-value" id="current-app">Loading...</div>
+        <span class="stat-sub" id="current-window">Detecting window title...</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-title">Sync Status</span>
+        <div class="stat-value text-green" id="sync-status">Synchronized</div>
+        <span class="stat-sub" id="pending-count">0 pending offline items</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-title">Workstation ID</span>
+        <div class="stat-value font-mono" id="client-id">---</div>
+        <span class="stat-sub" id="host-user">---</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-title">Admin Coordinator</span>
+        <div class="stat-value font-mono" id="admin-endpoint">http://127.0.0.1:3000</div>
+        <span class="stat-sub">Zero-Config UDP Beacon</span>
+      </div>
+    </div>
+
+    <!-- Policy Modal / Section -->
+    <div class="policy-modal" id="policy-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>📋 Company Policy & Permitted Software</h3>
+          <button class="close-btn" id="btn-close-rules">&times;</button>
+        </div>
+        <p class="modal-desc">Software allowed for daily work productivity. Unauthorized apps may trigger alerts.</p>
+        
+        <div class="rules-section">
+          <h4>Allowed Applications (.exe):</h4>
+          <div class="tags-container" id="allowed-apps-list">
+            <span class="tag">code.exe</span>
+            <span class="tag">slack.exe</span>
+            <span class="tag">chrome.exe</span>
+            <span class="tag">excel.exe</span>
+            <span class="tag">teams.exe</span>
+          </div>
+        </div>
+
+        <div class="rules-section">
+          <h4>Allowed Websites:</h4>
+          <div class="tags-container" id="allowed-domains-list">
+            <span class="tag">github.com</span>
+            <span class="tag">google.com</span>
+            <span class="tag">jira.atlassian.com</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-close-rules-bottom">Close Rules</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>WorkGuard Endpoint v1.0.0 • Offline LAN Security</span>
+      <button class="btn-text" id="btn-sync-now">Sync Now</button>
+    </footer>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

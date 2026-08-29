@@ -1,0 +1,13 @@
+{
+  "name": "workguard-admin-desktop",
+  "version": "1.0.0",
+  "description": "WorkGuard Admin Desktop Station - Offline Fleet Management",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "dependencies": {
+    "electron": "^31.3.1"
+  }
+}
