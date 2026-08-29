@@ -6,8 +6,9 @@ package-lock.json
 dist/
 *.zip
 
-# Runtime storage & buffers
+# Runtime storage, databases & buffers
 server/storage/screenshots/
+server/storage/database.json
 client/storage_buffer/
 client/bin/screengrab.exe
 *.log
