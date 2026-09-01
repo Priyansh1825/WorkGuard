@@ -11,11 +11,12 @@ const updater = require('./updater');
 const { getActiveWindowInfo } = require('./system_info');
 
 console.log(`=======================================================`);
-console.log(`🛡️  WorkGuard Client Agent Initializing...`);
+console.log(`🛡️  WorkGuard Secure Client Agent Initializing...`);
 console.log(`💻 Client ID:   ${config.CLIENT_ID}`);
 console.log(`🖥️  Host / User: ${config.HOSTNAME} (${config.USERNAME})`);
 console.log(`🏷️  Version:     v${config.AGENT_VERSION}`);
 console.log(`📡 Server URL:  ${config.SERVER_HTTP_URL} (Auto-discovery: ${config.AUTO_DISCOVER ? 'ON' : 'OFF'})`);
+console.log(`🔐 PSK Token:   ${config.AUTH_TOKEN ? 'Configured (Active)' : 'Missing'}`);
 console.log(`🖥️  Employee UI: ${config.ENABLE_UI ? 'Enabled' : 'Disabled (Stealth)'}`);
 console.log(`=======================================================`);
 
@@ -23,6 +24,16 @@ console.log(`=======================================================`);
 let currentPolicy = {
   allowed_apps: [],
   allowed_domains: [],
+  sensitive_apps: [
+    '1password.exe', 'bitwarden.exe', 'keepass.exe', 'lastpass.exe',
+    'authy.exe', 'nordpass.exe', 'kdbx.exe', 'authenticator.exe'
+  ],
+  sensitive_keywords: [
+    'password', 'bitwarden', '1password', 'keepass', 'bank',
+    'banking', 'netbanking', 'credit card', 'debit card', 'checkout',
+    'paypal', 'medical portal', 'hsa', 'mychart'
+  ],
+  pause_on_sensitive: true,
   work_hours_start: '00:00',
   work_hours_end: '23:59',
   capture_interval_sec: config.DEFAULT_CAPTURE_INTERVAL_SEC,
@@ -35,6 +46,7 @@ let heartbeatTimer = null;
 let reconnectTimer = null;
 let isConnecting = false;
 let isEmployeeOnBreak = false;
+let isPrivacyPaused = false;
 let lastSysInfo = { processName: 'Idle', windowTitle: 'Desktop', cpuUsage: 0, ramUsage: 0 };
 
 function isWithinWorkHours() {
@@ -58,6 +70,27 @@ function isWithinWorkHours() {
   }
 }
 
+/**
+ * Checks whether the current active window or application is sensitive (e.g. Password Manager, Banking).
+ * If sensitive and policy allows, captures are automatically paused for privacy and compliance.
+ */
+function isSensitiveActivity(processName, windowTitle) {
+  if (!currentPolicy.pause_on_sensitive) return false;
+
+  const proc = (processName || '').toLowerCase();
+  const win = (windowTitle || '').toLowerCase();
+
+  // 1. Check sensitive executable names
+  const sensitiveApps = currentPolicy.sensitive_apps || [];
+  const matchesApp = sensitiveApps.some(app => proc === app.toLowerCase() || proc.includes(app.toLowerCase().replace('.exe', '')));
+  if (matchesApp) return true;
+
+  // 2. Check sensitive title keywords
+  const sensitiveKeywords = currentPolicy.sensitive_keywords || [];
+  const matchesKeyword = sensitiveKeywords.some(keyword => win.includes(keyword.toLowerCase()));
+  return matchesKeyword;
+}
+
 function connectToServer() {
   if (isConnecting) return;
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
@@ -70,7 +103,7 @@ function connectToServer() {
     reconnectTimer = null;
   }
 
-  console.log(`[Network] Connecting to server WebSocket: ${config.SERVER_WS_URL}...`);
+  console.log(`[Network] Connecting to secure WebSocket: ${config.SERVER_WS_URL}...`);
   try {
     ws = new WebSocket(config.SERVER_WS_URL);
   } catch (e) {
@@ -89,10 +122,11 @@ function connectToServer() {
     // Fetch initial system state
     const sys = await getActiveWindowInfo();
 
-    // Register with server
+    // Register with server, including Pre-Shared Secret Key
     ws.send(JSON.stringify({
       type: 'AGENT_REGISTER',
       client_id: config.CLIENT_ID,
+      auth_token: config.AUTH_TOKEN,
       hostname: config.HOSTNAME,
       username: config.USERNAME,
       employee_name: config.EMPLOYEE_NAME,
@@ -114,12 +148,31 @@ function connectToServer() {
       const msg = JSON.parse(data.toString());
       switch (msg.type) {
         case 'REGISTER_OK':
+          if (msg.policy) {
+            currentPolicy = { ...currentPolicy, ...msg.policy };
+            console.log(`[Policy] Updated: Interval=${currentPolicy.capture_interval_sec}s, Mode=${currentPolicy.policy_mode}, SensitiveShield=${currentPolicy.pause_on_sensitive ? 'Active' : 'Disabled'}`);
+            resetCaptureTimer();
+          }
+          if (msg.update_available && msg.auto_update_enabled && msg.latest_version) {
+            console.log(`[AutoUpdate] 🚀 Server indicated update available: v${config.AGENT_VERSION} -> v${msg.latest_version}. Initiating auto-upgrade...`);
+            updater.handleOTAUpdate({
+              version: msg.latest_version,
+              download_url: '/api/updates/download/latest',
+              force: true
+            }, ws);
+          }
+          break;
+
         case 'POLICY_UPDATE':
           if (msg.policy) {
             currentPolicy = { ...currentPolicy, ...msg.policy };
-            console.log(`[Policy] Updated: Interval=${currentPolicy.capture_interval_sec}s, Mode=${currentPolicy.policy_mode}`);
+            console.log(`[Policy] Updated: Interval=${currentPolicy.capture_interval_sec}s, Mode=${currentPolicy.policy_mode}, SensitiveShield=${currentPolicy.pause_on_sensitive ? 'Active' : 'Disabled'}`);
             resetCaptureTimer();
           }
+          break;
+
+        case 'AUTH_FAILED':
+          console.error(`[Security] 🚫 Server rejected authentication: ${msg.error}. Check client auth_token in config.json.`);
           break;
 
         case 'OTA_UPDATE_COMMAND':
@@ -134,7 +187,7 @@ function connectToServer() {
           break;
 
         case 'START_STREAMING':
-          if (isWithinWorkHours()) {
+          if (isWithinWorkHours() && !isPrivacyPaused) {
             liveStreamer.startStreaming({
               fps: msg.fps || 15,
               quality: msg.quality || 70
@@ -152,8 +205,8 @@ function connectToServer() {
 
         case 'ADMIN_NOTIFICATION':
           console.log(`[Admin Notice] ${msg.title}: ${msg.message}`);
-          if (uiServer) {
-            uiServer.broadcastNotification(msg.message, msg.title);
+          if (clientUI) {
+            clientUI.broadcastNotification(msg.message, msg.title);
           }
           break;
 
@@ -165,9 +218,13 @@ function connectToServer() {
     }
   });
 
-  ws.on('close', () => {
+  ws.on('close', (code, reason) => {
     isConnecting = false;
-    console.log('[Network] ⚠️ Connection closed. Reconnecting in 5s...');
+    if (code === 4001) {
+      console.error('[Security] 🚫 Disconnected: Authentication failed with server (Code 4001).');
+    } else {
+      console.log('[Network] ⚠️ Connection closed. Reconnecting in 5s...');
+    }
     liveStreamer.stopStreaming();
     scheduleReconnect();
   });
@@ -188,7 +245,7 @@ function scheduleReconnect(delay = 5000) {
 // Auto-Discovery Listener
 if (config.AUTO_DISCOVER) {
   autoDiscovery.on('discovered', (serverInfo) => {
-    console.log(`[Network] 🔄 Auto-Discovery update: Switching to ${serverInfo.httpUrl}`);
+    console.log(`[Network] 🔄 Auto-Discovery verified: Switching to ${serverInfo.httpUrl}`);
     config.setServerEndpoint(serverInfo.host, serverInfo.port);
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       if (ws) {
@@ -202,10 +259,9 @@ if (config.AUTO_DISCOVER) {
   autoDiscovery.start();
 }
 
-
 /**
  * Captures a silent screenshot and hands it to the offline queue.
- * Operates without popups, flashes, or window disturbance.
+ * Respects work hours and pauses for sensitive applications (Privacy Shield).
  */
 async function takeSilentScreenshot() {
   if (!isWithinWorkHours()) {
@@ -214,6 +270,13 @@ async function takeSilentScreenshot() {
 
   try {
     const sys = await getActiveWindowInfo();
+
+    // Check Privacy Shield
+    if (isSensitiveActivity(sys.processName, sys.windowTitle)) {
+      console.log(`[Privacy Shield] 🛡️ Sensitive window in focus ('${sys.windowTitle}'). Screenshot capture paused.`);
+      return;
+    }
+
     const imageBuffer = await captureEngine.captureScreen();
 
     if (imageBuffer) {
@@ -241,26 +304,41 @@ function resetCaptureTimer() {
   }, intervalMs);
 }
 
-// Background evaluation loop: heartbeats & process/website whitelisting
+// Background evaluation loop: heartbeats, privacy checks, process/website whitelisting
 function startMonitoringLoop() {
   heartbeatTimer = setInterval(async () => {
     try {
       const sys = await getActiveWindowInfo();
       lastSysInfo = sys;
 
+      const isSensitive = isSensitiveActivity(sys.processName, sys.windowTitle);
+      isPrivacyPaused = isSensitive;
+
       // 1. Send Heartbeat to server if connected
       if (ws && ws.readyState === WebSocket.OPEN) {
+        let displayApp = sys.processName;
+        let displayWin = sys.windowTitle;
+
+        if (isEmployeeOnBreak) {
+          displayApp = '☕ On Break';
+          displayWin = 'Break Mode Active';
+        } else if (isSensitive) {
+          displayApp = '🛡️ Privacy Shield';
+          displayWin = 'Sensitive App in Focus (Masked)';
+        }
+
         ws.send(JSON.stringify({
           type: 'AGENT_HEARTBEAT',
-          current_app: isEmployeeOnBreak ? '☕ On Break' : sys.processName,
-          current_window: isEmployeeOnBreak ? 'Break Mode Active' : sys.windowTitle,
+          current_app: displayApp,
+          current_window: displayWin,
           cpu_usage: sys.cpuUsage,
-          ram_usage: sys.ramUsage
+          ram_usage: sys.ramUsage,
+          is_privacy_paused: isSensitive
         }));
       }
 
       // 2. Evaluate Application Whitelist
-      if (isWithinWorkHours()) {
+      if (isWithinWorkHours() && !isSensitive) {
         appController.evaluateProcess(sys.processName, sys.windowTitle, currentPolicy, (violation) => {
           if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
@@ -329,11 +407,12 @@ function getLiveStatus() {
     employeeName: config.EMPLOYEE_NAME,
     department: config.DEPARTMENT,
     serverUrl: config.SERVER_HTTP_URL,
-    currentApp: isEmployeeOnBreak ? '☕ On Break' : (lastSysInfo.processName || 'Desktop'),
-    currentWindow: isEmployeeOnBreak ? 'Break Mode (Capture Paused)' : (lastSysInfo.windowTitle || 'Idle'),
+    currentApp: isEmployeeOnBreak ? '☕ On Break' : (isPrivacyPaused ? '🛡️ Privacy Shield' : (lastSysInfo.processName || 'Desktop')),
+    currentWindow: isEmployeeOnBreak ? 'Break Mode (Capture Paused)' : (isPrivacyPaused ? 'Sensitive App Focused' : (lastSysInfo.windowTitle || 'Idle')),
     pendingBufferCount: offlineQueue.getPendingCount(),
     policy: currentPolicy,
-    isOnBreak: isEmployeeOnBreak
+    isOnBreak: isEmployeeOnBreak,
+    isPrivacyPaused: isPrivacyPaused
   };
 }
 

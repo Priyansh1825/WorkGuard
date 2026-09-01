@@ -14,6 +14,7 @@ let serverHost = '127.0.0.1';
 let serverPort = 3000;
 let autoDiscover = true;
 let enableUi = true;
+let authToken = 'workguard-lan-secret-key-2026'; // Pre-Shared Secret Key for LAN handshake
 
 if (fs.existsSync(CONFIG_FILE)) {
   try {
@@ -22,6 +23,7 @@ if (fs.existsSync(CONFIG_FILE)) {
     if (userCfg.server_port) serverPort = userCfg.server_port;
     if (typeof userCfg.auto_discover === 'boolean') autoDiscover = userCfg.auto_discover;
     if (typeof userCfg.enable_ui === 'boolean') enableUi = userCfg.enable_ui;
+    if (userCfg.auth_token) authToken = userCfg.auth_token;
   } catch (e) {}
 } else {
   // Create default config.json for user convenience
@@ -29,7 +31,8 @@ if (fs.existsSync(CONFIG_FILE)) {
     auto_discover: true,
     server_host: "127.0.0.1",
     server_port: 3000,
-    enable_ui: true
+    enable_ui: true,
+    auth_token: "workguard-lan-secret-key-2026"
   }, null, 2), 'utf8');
 }
 
@@ -38,6 +41,7 @@ if (process.env.SERVER_HOST) serverHost = process.env.SERVER_HOST;
 if (process.env.SERVER_PORT) serverPort = parseInt(process.env.SERVER_PORT, 10);
 if (process.env.AUTO_DISCOVER) autoDiscover = process.env.AUTO_DISCOVER === 'true';
 if (process.env.ENABLE_UI) enableUi = process.env.ENABLE_UI === 'true';
+if (process.env.AUTH_TOKEN) authToken = process.env.AUTH_TOKEN;
 
 // Generate persistent unique Client ID
 const ID_FILE = path.join(DATA_DIR, 'client_id.txt');
@@ -81,6 +85,7 @@ const config = {
   ENABLE_UI: enableUi,
   SERVER_HOST: serverHost,
   SERVER_PORT: serverPort,
+  AUTH_TOKEN: authToken,
   get SERVER_HTTP_URL() {
     return `http://${this.SERVER_HOST}:${this.SERVER_PORT}`;
   },

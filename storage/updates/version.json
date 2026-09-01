@@ -1,8 +1,9 @@
 {
-  "version": "1.2.0",
-  "release_notes": "Performance improvements, real-time telemetry optimization & zero-delay hardware screen capture.",
-  "released_at": "2026-08-29T10:45:54.727Z",
+  "version": "1.4.0",
+  "release_notes": "Automated Cloud Release v1.4.0",
+  "released_at": "2026-09-01T10:23:50.498Z",
   "bundle_size": 1072740,
   "sha256": "242bb3e709c71b3976278ee589eba604caae9dd94a9cb7f54c6ba8c12bb2e48e",
-  "updated_at": "2026-08-29T10:45:55.296Z"
+  "source_cloud_url": "http://127.0.0.1:52882/releases/client-v1.4.0.zip",
+  "updated_at": "2026-09-01T11:18:56.847Z"
 }

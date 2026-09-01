@@ -1,5 +1,7 @@
 const dgram = require('dgram');
+const crypto = require('crypto');
 const EventEmitter = require('events');
+const config = require('./config');
 
 class ClientAutoDiscovery extends EventEmitter {
   constructor(broadcastPort = 38281) {
@@ -28,6 +30,28 @@ class ClientAutoDiscovery extends EventEmitter {
             const host = rinfo.address;
             const port = data.port || 3000;
 
+            // Security verification: Validate HMAC signature if provided
+            if (data.signature) {
+              const payloadObj = {
+                service: data.service,
+                version: data.version,
+                port: data.port,
+                timestamp: data.timestamp
+              };
+              const expectedSig = crypto
+                .createHmac('sha256', config.AUTH_TOKEN)
+                .update(JSON.stringify(payloadObj))
+                .digest('hex');
+
+              const sigBuf = Buffer.from(data.signature, 'hex');
+              const expBuf = Buffer.from(expectedSig, 'hex');
+
+              if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+                console.warn(`[AutoDiscovery] ⚠️ Discarded spoofed or untrusted beacon from ${host} (HMAC signature mismatch)`);
+                return;
+              }
+            }
+
             const isNew = !this.lastDiscovered ||
               this.lastDiscovered.host !== host ||
               this.lastDiscovered.port !== port;
@@ -35,7 +59,7 @@ class ClientAutoDiscovery extends EventEmitter {
             this.lastDiscovered = { host, port, lastSeen: Date.now() };
 
             if (isNew) {
-              console.log(`[AutoDiscovery] 🎯 Found WorkGuard Server automatically at http://${host}:${port}`);
+              console.log(`[AutoDiscovery] 🎯 Verified & Connected to WorkGuard Server at http://${host}:${port}`);
               this.emit('discovered', {
                 host,
                 port,

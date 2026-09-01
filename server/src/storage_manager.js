@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+const db = require('./db');
+const securityAuth = require('./security_auth');
 
 const CONFIG_FILE = path.join(__dirname, '..', 'config.json');
 const LOCAL_STORAGE_DIR = path.join(__dirname, '..', 'storage', 'screenshots');
@@ -102,35 +104,80 @@ class StorageManager {
       cloud_storage_url: this.config.cloud_storage_url || '',
       database_url: this.config.database_url ? 'Configured (Cloud Database)' : 'Local JSON Database (database.json)',
       retention_days: this.config.retention_days || 20,
-      localStoragePath: this.getLocalStorageDir()
+      localStoragePath: this.getLocalStorageDir(),
+      encryption_enabled: db.isEncryptionEnabled()
     };
   }
 
   /**
-   * Saves a screenshot. If cloud_storage_url is set, forwards to cloud; otherwise saves locally.
+   * Saves a screenshot. If encryption is enabled, encrypts bytes with AES-256-GCM.
    */
   async saveScreenshot(clientId, dateStr, filename, fileBuffer) {
+    let finalBuffer = fileBuffer;
+    let isEncrypted = false;
+
+    if (db.isEncryptionEnabled()) {
+      const encKey = db.getEncryptionKey();
+      finalBuffer = securityAuth.encryptBuffer(fileBuffer, encKey);
+      isEncrypted = true;
+    }
+
     if (this.config.storage_type === 'cloud' && this.config.cloud_storage_url) {
-      return await this.uploadToCloudStorage(clientId, dateStr, filename, fileBuffer);
+      const res = await this.uploadToCloudStorage(clientId, dateStr, filename, finalBuffer);
+      return { ...res, is_encrypted: isEncrypted };
     } else {
-      return this.saveToLocalStorage(clientId, dateStr, filename, fileBuffer);
+      const res = this.saveToLocalStorage(clientId, dateStr, filename, finalBuffer);
+      return { ...res, is_encrypted: isEncrypted };
     }
   }
 
   saveToLocalStorage(clientId, dateStr, filename, fileBuffer) {
     const baseDir = this.getLocalStorageDir();
-    const targetDir = path.join(baseDir, clientId, dateStr);
+    const safeClientId = securityAuth.sanitizeFilename(clientId);
+    const safeDate = securityAuth.sanitizeFilename(dateStr);
+    const safeFilename = securityAuth.sanitizeFilename(filename);
+
+    const targetDir = path.join(baseDir, safeClientId, safeDate);
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
-    const fullPath = path.join(targetDir, filename);
+    const fullPath = path.join(targetDir, safeFilename);
     fs.writeFileSync(fullPath, fileBuffer);
-    const relativePath = `/screenshots-raw/${clientId}/${dateStr}/${filename}`;
+    
+    // Relative authenticated API URL format
+    const relativePath = `/api/screenshots/raw/${safeClientId}/${safeDate}/${safeFilename}`;
     return {
       filepath: relativePath,
       storage_type: 'local',
       size: fileBuffer.length
     };
+  }
+
+  /**
+   * Reads and automatically decrypts screenshot file from storage on-the-fly.
+   */
+  readScreenshotFile(clientId, dateStr, filename) {
+    const baseDir = this.getLocalStorageDir();
+    const safeClientId = securityAuth.sanitizeFilename(clientId);
+    const safeDate = securityAuth.sanitizeFilename(dateStr);
+    const safeFilename = securityAuth.sanitizeFilename(filename);
+
+    const fullPath = path.join(baseDir, safeClientId, safeDate, safeFilename);
+    if (!fs.existsSync(fullPath)) {
+      return null;
+    }
+
+    try {
+      const rawBuffer = fs.readFileSync(fullPath);
+      // If encrypted, decrypt on the fly
+      if (securityAuth.isBufferEncrypted(rawBuffer)) {
+        return securityAuth.decryptBuffer(rawBuffer, db.getEncryptionKey());
+      }
+      return rawBuffer;
+    } catch (e) {
+      console.error('[StorageManager] Error reading/decrypting file:', e.message);
+      return null;
+    }
   }
 
   async uploadToCloudStorage(clientId, dateStr, filename, fileBuffer) {
@@ -140,13 +187,17 @@ class StorageManager {
         const isHttps = cloudUrl.protocol === 'https:';
         const clientLib = isHttps ? https : http;
 
+        const safeClientId = securityAuth.sanitizeFilename(clientId);
+        const safeDate = securityAuth.sanitizeFilename(dateStr);
+        const safeFilename = securityAuth.sanitizeFilename(filename);
+
         const options = {
           hostname: cloudUrl.hostname,
           port: cloudUrl.port || (isHttps ? 443 : 80),
-          path: `${cloudUrl.pathname.replace(/\/$/, '')}/${clientId}/${dateStr}/${filename}`,
+          path: `${cloudUrl.pathname.replace(/\/$/, '')}/${safeClientId}/${safeDate}/${safeFilename}`,
           method: 'PUT',
           headers: {
-            'Content-Type': 'image/jpeg',
+            'Content-Type': 'application/octet-stream',
             'Content-Length': fileBuffer.length
           },
           timeout: 8000
@@ -154,7 +205,7 @@ class StorageManager {
 
         const req = clientLib.request(options, (res) => {
           if (res.statusCode >= 200 && res.statusCode < 300) {
-            const publicUrl = `${this.config.cloud_storage_url.replace(/\/$/, '')}/${clientId}/${dateStr}/${filename}`;
+            const publicUrl = `${this.config.cloud_storage_url.replace(/\/$/, '')}/${safeClientId}/${safeDate}/${safeFilename}`;
             resolve({
               filepath: publicUrl,
               storage_type: 'cloud',

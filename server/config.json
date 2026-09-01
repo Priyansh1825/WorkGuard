@@ -1,5 +1,6 @@
 {
   "storage_type": "local",
+  "local_storage_path": "D:\\employee_monitor\\server\\storage\\screenshots",
   "cloud_storage_url": "",
   "database_url": "",
   "retention_days": 20

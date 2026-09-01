@@ -1,5 +1,8 @@
 const WebSocket = require('ws');
+const fs = require('fs');
 const db = require('./db');
+const securityAuth = require('./security_auth');
+const alertManager = require('./alert_manager');
 
 class WebSocketServerHandler {
   constructor(server, app) {
@@ -22,6 +25,7 @@ class WebSocketServerHandler {
       ws.isAlive = true;
       ws.clientType = null; // 'agent' or 'admin'
       ws.clientId = null;
+      ws.isAdminAuthenticated = false;
 
       ws.on('pong', () => {
         ws.isAlive = true;
@@ -139,7 +143,7 @@ class WebSocketServerHandler {
         const viewers = this.streamSubscribers.get(ws.clientId);
         if (viewers && viewers.size > 0) {
           viewers.forEach((adminWs) => {
-            if (adminWs.readyState === WebSocket.OPEN) {
+            if (adminWs.readyState === WebSocket.OPEN && adminWs.isAdminAuthenticated) {
               adminWs.send(message, { binary: true });
             }
           });
@@ -153,8 +157,21 @@ class WebSocketServerHandler {
       const data = JSON.parse(message.toString());
 
       switch (data.type) {
-        // --- Agent Identification & Heartbeat ---
+        // --- Agent Identification & Heartbeat (Protected by PSK) ---
         case 'AGENT_REGISTER': {
+          const expectedSecret = db.getAgentSecretKey();
+          const providedToken = data.auth_token || data.token;
+
+          // Validate Agent Pre-Shared Key
+          if (!securityAuth.verifyAgentKey(providedToken, expectedSecret)) {
+            console.warn(`[Security] 🚫 Rejected unauthenticated agent connection from ${req.socket.remoteAddress} (Invalid or missing auth_token)`);
+            ws.send(JSON.stringify({
+              type: 'AUTH_FAILED',
+              error: 'Invalid or missing agent authentication token'
+            }));
+            return ws.close(4001, 'Unauthorized');
+          }
+
           ws.clientType = 'agent';
           ws.clientId = data.client_id;
           this.agents.set(data.client_id, ws);
@@ -177,14 +194,40 @@ class WebSocketServerHandler {
 
           // Send back registration confirmation & active policy
           const activePolicy = db.getPolicy('default');
+          const updatesManager = require('./updates_manager');
+          const versionInfo = updatesManager.getVersionInfo();
+          const isOutdated = updatesManager.compareVersions(clientData.agent_version, versionInfo.version) < 0;
+          const autoUpdateEnabled = db.isAutoUpdateEnabled();
+          const zipPath = updatesManager.getLatestZipPath();
+
           ws.send(JSON.stringify({
             type: 'REGISTER_OK',
             client: clientData,
-            policy: activePolicy
+            policy: activePolicy,
+            latest_version: versionInfo.version,
+            update_available: isOutdated,
+            auto_update_enabled: autoUpdateEnabled
           }));
 
           // Notify admins of updated fleet status
           this.broadcastFleetUpdate();
+
+          // If Auto-Update on Connect is active and client is outdated, auto-dispatch OTA upgrade
+          if (autoUpdateEnabled && isOutdated && zipPath && fs.existsSync(zipPath)) {
+            console.log(`[AutoUpdate] 🚀 Outdated client connected: ${data.client_id} (v${clientData.agent_version} -> v${versionInfo.version}). Automatically pushing update...`);
+            setTimeout(() => {
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                  type: 'OTA_UPDATE_COMMAND',
+                  version: versionInfo.version,
+                  sha256: versionInfo.sha256,
+                  release_notes: versionInfo.release_notes,
+                  force: true,
+                  download_url: '/api/updates/download/latest'
+                }));
+              }
+            }, 1200);
+          }
           break;
         }
 
@@ -222,7 +265,7 @@ class WebSocketServerHandler {
 
         case 'AGENT_HEARTBEAT': {
           if (ws.clientId) {
-            db.upsertClient({
+            const updatedClient = db.upsertClient({
               id: ws.clientId,
               current_app: data.current_app,
               current_window: data.current_window,
@@ -230,6 +273,11 @@ class WebSocketServerHandler {
               ram_usage: data.ram_usage
             });
             this.broadcastFleetUpdate();
+
+            // Real-time prohibited application check on heartbeat
+            if (data.current_app) {
+              alertManager.processWorkstationActivity(updatedClient, data.current_app, data.current_window).catch(() => {});
+            }
           }
           break;
         }
@@ -245,20 +293,46 @@ class WebSocketServerHandler {
           break;
         }
 
-        // --- Admin Dashboard Identification & Control ---
+        // --- Admin Dashboard Identification & Control (Protected by Session Tokens) ---
         case 'ADMIN_REGISTER': {
           ws.clientType = 'admin';
+          const isPassSet = db.isPasswordSet();
+          
+          if (!isPassSet) {
+            // First time setup: allow connection to set initial password
+            ws.isAdminAuthenticated = true;
+          } else {
+            // Check session token
+            const sessionSecret = db.getSessionSecret();
+            const session = securityAuth.verifySessionToken(data.session_token, sessionSecret);
+            if (session) {
+              ws.isAdminAuthenticated = true;
+            } else {
+              ws.isAdminAuthenticated = false;
+              ws.send(JSON.stringify({
+                type: 'ADMIN_AUTH_REQUIRED',
+                message: 'Admin session required'
+              }));
+              return;
+            }
+          }
+
           this.admins.add(ws);
           ws.send(JSON.stringify({
             type: 'ADMIN_CONNECTED',
+            authenticated: true,
             stats: db.getStats(),
-            clients: db.getClients()
+            clients: db.getClients(),
+            security: db.getSecurityConfig()
           }));
           break;
         }
 
         case 'START_VIEW_STREAM': {
-          // Admin requests live screen stream for a specific client
+          if (!ws.isAdminAuthenticated) {
+            return ws.send(JSON.stringify({ type: 'UNAUTHORIZED' }));
+          }
+
           const targetClientId = data.target_client_id;
           if (!targetClientId) return;
 
@@ -286,7 +360,6 @@ class WebSocketServerHandler {
             const viewers = this.streamSubscribers.get(targetClientId);
             viewers.delete(ws);
 
-            // If no more admins are watching this client, signal agent to stop capture
             if (viewers.size === 0) {
               const agentWs = this.agents.get(targetClientId);
               if (agentWs && agentWs.readyState === WebSocket.OPEN) {
@@ -298,6 +371,7 @@ class WebSocketServerHandler {
         }
 
         case 'REQUEST_INSTANT_SCREENSHOT': {
+          if (!ws.isAdminAuthenticated) return;
           const targetClientId = data.target_client_id;
           const agentWs = this.agents.get(targetClientId);
           if (agentWs && agentWs.readyState === WebSocket.OPEN) {
@@ -307,15 +381,15 @@ class WebSocketServerHandler {
         }
 
         case 'SEND_CLIENT_MESSAGE': {
+          if (!ws.isAdminAuthenticated) return;
           const targetClientId = data.target_client_id;
           const payload = JSON.stringify({
             type: 'ADMIN_NOTIFICATION',
-            title: data.title || 'Manager Notice',
-            message: data.message || 'Please check your workstation tasks.'
+            title: securityAuth.sanitizeText(data.title) || 'Manager Notice',
+            message: securityAuth.sanitizeText(data.message) || 'Please check your workstation tasks.'
           });
 
           if (targetClientId === 'ALL') {
-            // Broadcast to all connected agents
             this.agents.forEach((agentWs) => {
               if (agentWs.readyState === WebSocket.OPEN) {
                 agentWs.send(payload);
@@ -344,7 +418,6 @@ class WebSocketServerHandler {
       db.setClientStatus(ws.clientId, 'offline');
       this.broadcastFleetUpdate();
 
-      // Notify any viewers that agent went offline
       const viewers = this.streamSubscribers.get(ws.clientId);
       if (viewers) {
         viewers.forEach((adminWs) => {
@@ -360,7 +433,6 @@ class WebSocketServerHandler {
       }
     } else if (ws.clientType === 'admin') {
       this.admins.delete(ws);
-      // Remove admin from all stream subscriber lists
       this.streamSubscribers.forEach((viewers, clientId) => {
         if (viewers.has(ws)) {
           viewers.delete(ws);
@@ -380,13 +452,11 @@ class WebSocketServerHandler {
       type: 'POLICY_UPDATE',
       policy
     });
-    // Send to all connected agents
     this.agents.forEach((ws) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(payload);
       }
     });
-    // Send to all admins
     this.broadcastToAdmins({
       type: 'POLICY_SAVED',
       policy
@@ -404,7 +474,7 @@ class WebSocketServerHandler {
   broadcastToAdmins(payload) {
     const msg = JSON.stringify(payload);
     this.admins.forEach((adminWs) => {
-      if (adminWs.readyState === WebSocket.OPEN) {
+      if (adminWs.readyState === WebSocket.OPEN && adminWs.isAdminAuthenticated) {
         adminWs.send(msg);
       }
     });

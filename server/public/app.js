@@ -6,11 +6,20 @@ const state = {
   policy: {
     allowed_apps: [],
     allowed_domains: [],
+    sensitive_apps: [],
+    sensitive_keywords: [],
+    pause_on_sensitive: true,
     work_hours_start: '09:00',
     work_hours_end: '18:00',
     capture_interval_sec: 15,
     stream_fps: 15,
     policy_mode: 'audit-alert'
+  },
+  security: {
+    is_password_set: false,
+    agent_secret_key: 'workguard-lan-secret-key-2026',
+    encryption_enabled: false,
+    session_timeout_minutes: 15
   },
   stats: {},
   activeTab: 'overview',
@@ -18,8 +27,94 @@ const state = {
   isStreaming: false,
   streamFpsCounter: 0,
   streamFpsInterval: null,
-  currentStreamBlobUrl: null
+  currentStreamBlobUrl: null,
+  authMode: 'login', // 'setup', 'login', 'lock'
+  lastActivityTime: Date.now(),
+  dbStudio: {
+    activeTable: 'clients',
+    currentPage: 1,
+    limit: 20,
+    search: '',
+    totalRecords: 0,
+    totalPages: 1,
+    currentRecord: null,
+    modalMode: 'add'
+  }
 };
+
+// --- Authentication & Session Storage Helpers ---
+function getAuthToken() {
+  return localStorage.getItem('workguard_admin_token') || '';
+}
+
+function setAuthToken(token) {
+  if (token) {
+    localStorage.setItem('workguard_admin_token', token);
+  } else {
+    localStorage.removeItem('workguard_admin_token');
+  }
+}
+
+async function authFetch(url, options = {}) {
+  const token = getAuthToken();
+  const headers = options.headers ? { ...options.headers } : {};
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const opts = { ...options, headers };
+  
+  try {
+    const res = await fetch(url, opts);
+    if (res.status === 401 && !url.includes('/api/auth/login') && !url.includes('/api/auth/setup') && !url.includes('/api/auth/status')) {
+      showAuthModal('login', 'Session expired or unauthorized. Please re-enter master password.');
+    }
+    return res;
+  } catch (err) {
+    throw err;
+  }
+}
+
+function getSecureImageUrl(filepath) {
+  if (!filepath) return '';
+  const token = getAuthToken();
+  if (token && filepath.startsWith('/api/screenshots/raw/')) {
+    return `${filepath}?token=${encodeURIComponent(token)}`;
+  }
+  return filepath;
+}
+
+// Inactivity Auto-Lockout Monitor
+function resetInactivityTimer() {
+  state.lastActivityTime = Date.now();
+}
+
+function startInactivityWatcher() {
+  ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'].forEach(evt => {
+    window.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
+
+  setInterval(() => {
+    if (!state.security || !state.security.is_password_set) return;
+    const modal = document.getElementById('auth-modal');
+    if (modal && modal.classList.contains('active')) return; // Already locked/logged out
+
+    const timeoutMs = (state.security.session_timeout_minutes || 15) * 60 * 1000;
+    if (Date.now() - state.lastActivityTime > timeoutMs) {
+      lockStation('Station locked automatically due to inactivity.');
+    }
+  }, 15000);
+}
+
+function lockStation(reason = 'Station locked.') {
+  setAuthToken('');
+  if (ws) {
+    try { ws.close(); } catch (e) {}
+  }
+  showAuthModal('lock', reason);
+  showToast('🔒 Admin Station Locked', 'info');
+}
 
 // WebSocket Connection
 let ws = null;
@@ -33,8 +128,11 @@ function initWebSocket() {
 
   ws.onopen = () => {
     document.getElementById('ws-indicator').classList.remove('offline');
-    document.getElementById('server-status-text').textContent = 'Connected (Online)';
-    ws.send(JSON.stringify({ type: 'ADMIN_REGISTER' }));
+    document.getElementById('server-status-text').textContent = 'Connected (Secure)';
+    ws.send(JSON.stringify({ 
+      type: 'ADMIN_REGISTER',
+      session_token: getAuthToken()
+    }));
   };
 
   ws.onmessage = (event) => {
@@ -48,10 +146,15 @@ function initWebSocket() {
     try {
       const data = JSON.parse(event.data);
       switch (data.type) {
+        case 'ADMIN_AUTH_REQUIRED':
+          showAuthModal('login', 'Authentication required to connect to Admin Station.');
+          break;
+
         case 'ADMIN_CONNECTED':
         case 'FLEET_UPDATE':
           state.clients = data.clients || [];
           if (data.stats) state.stats = data.stats;
+          if (data.security) state.security = { ...state.security, ...data.security };
           renderFleetOverview();
           updateLiveStreamSelectors();
           updateStatsCards();
@@ -95,7 +198,12 @@ function initWebSocket() {
   ws.onclose = () => {
     document.getElementById('ws-indicator').classList.add('offline');
     document.getElementById('server-status-text').textContent = 'Disconnected (Reconnecting...)';
-    setTimeout(initWebSocket, 3000);
+    setTimeout(() => {
+      const modal = document.getElementById('auth-modal');
+      if (!modal || !modal.classList.contains('active')) {
+        initWebSocket();
+      }
+    }, 3000);
   };
 
   ws.onerror = () => {
@@ -201,13 +309,17 @@ function requestInstantScreenshot() {
       target_client_id: clientId
     }));
     showToast('Requested instant capture from agent...', 'success');
+  } else {
+    authFetch(`/api/clients/${clientId}/capture`, { method: 'POST' })
+      .then(() => showToast('📸 Instant capture requested', 'success'))
+      .catch(e => showToast(`Error: ${e.message}`, 'alert'));
   }
 }
 
 // REST API Calls
 async function fetchStats() {
   try {
-    const res = await fetch('/api/stats');
+    const res = await authFetch('/api/stats');
     const data = await res.json();
     if (data.success) {
       state.stats = data.stats;
@@ -220,7 +332,7 @@ async function fetchStats() {
 
 async function fetchClients() {
   try {
-    const res = await fetch('/api/clients');
+    const res = await authFetch('/api/clients');
     const data = await res.json();
     if (data.success) {
       state.clients = data.clients;
@@ -242,7 +354,7 @@ async function fetchScreenshots() {
     if (clientFilter && clientFilter !== 'all') url += `&client_id=${clientFilter}`;
     if (dateFilter) url += `&date=${dateFilter}`;
 
-    const res = await fetch(url);
+    const res = await authFetch(url);
     const data = await res.json();
     if (data.success) {
       let shots = data.screenshots;
@@ -263,8 +375,8 @@ async function fetchScreenshots() {
 async function fetchPolicy() {
   try {
     const [policyRes, storageRes] = await Promise.all([
-      fetch('/api/policies'),
-      fetch('/api/settings/storage')
+      authFetch('/api/policies'),
+      authFetch('/api/settings/storage')
     ]);
 
     const data = await policyRes.json();
@@ -304,13 +416,13 @@ async function savePolicy() {
     const cloudStorageUrl = document.getElementById('setting-cloud-storage-url') ? document.getElementById('setting-cloud-storage-url').value.trim() : '';
     const cloudDbUrl = document.getElementById('setting-cloud-db-url') ? document.getElementById('setting-cloud-db-url').value.trim() : '';
 
-    const [res, storageRes] = await Promise.all([
-      fetch('/api/policies', {
+    const [res] = await Promise.all([
+      authFetch('/api/policies', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }),
-      fetch('/api/settings/storage', {
+      authFetch('/api/settings/storage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -334,7 +446,7 @@ async function savePolicy() {
 
 async function fetchLogs() {
   try {
-    const res = await fetch('/api/logs?limit=100');
+    const res = await authFetch('/api/logs?limit=100');
     const data = await res.json();
     if (data.success) {
       state.logs = data.logs;
@@ -345,68 +457,337 @@ async function fetchLogs() {
   }
 }
 
+// --- Security & Privacy Settings Manager ---
+async function fetchSecuritySettings() {
+  try {
+    const [secRes, polRes] = await Promise.all([
+      authFetch('/api/security/settings'),
+      authFetch('/api/policies')
+    ]);
+
+    const secData = await secRes.json();
+    if (secData.success) {
+      state.security = { ...state.security, ...secData };
+      
+      const agentKeyInput = document.getElementById('sec-agent-secret-key');
+      const aesToggle = document.getElementById('sec-aes-encryption-toggle');
+      const timeoutSelect = document.getElementById('sec-session-timeout-select');
+
+      if (agentKeyInput) agentKeyInput.value = secData.agent_secret_key || '';
+      if (aesToggle) aesToggle.checked = !!secData.encryption_enabled;
+      if (timeoutSelect) timeoutSelect.value = secData.session_timeout_minutes || 15;
+    }
+
+    const polData = await polRes.json();
+    if (polData.success && polData.policy) {
+      state.policy = polData.policy;
+      const sensApps = document.getElementById('sec-sensitive-apps');
+      const sensKeywords = document.getElementById('sec-sensitive-keywords');
+      const pauseToggle = document.getElementById('sec-privacy-pause-toggle');
+
+      if (sensApps) sensApps.value = (polData.policy.sensitive_apps || []).join(', ');
+      if (sensKeywords) sensKeywords.value = (polData.policy.sensitive_keywords || []).join(', ');
+      if (pauseToggle) pauseToggle.checked = polData.policy.pause_on_sensitive !== false;
+    }
+  } catch (err) {
+    console.error('Fetch security settings error:', err);
+  }
+}
+
+async function saveSecuritySettings() {
+  try {
+    const agentKey = document.getElementById('sec-agent-secret-key').value.trim();
+    const encryptionEnabled = document.getElementById('sec-aes-encryption-toggle').checked;
+    const timeoutMin = parseInt(document.getElementById('sec-session-timeout-select').value, 10) || 15;
+
+    const sensAppsRaw = document.getElementById('sec-sensitive-apps').value;
+    const sensKeywordsRaw = document.getElementById('sec-sensitive-keywords').value;
+    const pauseOnSens = document.getElementById('sec-privacy-pause-toggle').checked;
+
+    const sensitiveApps = sensAppsRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const sensitiveKeywords = sensKeywordsRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+    const [secRes, polRes] = await Promise.all([
+      authFetch('/api/security/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent_secret_key: agentKey,
+          encryption_enabled: encryptionEnabled,
+          session_timeout_minutes: timeoutMin
+        })
+      }),
+      authFetch('/api/policies', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sensitive_apps: sensitiveApps,
+          sensitive_keywords: sensitiveKeywords,
+          pause_on_sensitive: pauseOnSens
+        })
+      })
+    ]);
+
+    const secData = await secRes.json();
+    const polData = await polRes.json();
+
+    if (secData.success && polData.success) {
+      state.security = { ...state.security, ...secData.security };
+      state.policy = polData.policy;
+      showToast('🛡️ Security & Privacy configuration saved & deployed!', 'success');
+    } else {
+      showToast('Error saving security settings', 'alert');
+    }
+  } catch (err) {
+    showToast('Failed to save security settings: ' + err.message, 'alert');
+  }
+}
+
+async function updateAdminPassword() {
+  const currentPass = document.getElementById('sec-current-password').value;
+  const newPass = document.getElementById('sec-new-password').value;
+
+  if (!newPass || newPass.length < 6) {
+    showToast('New password must be at least 6 characters long', 'alert');
+    return;
+  }
+
+  try {
+    const res = await authFetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password: currentPass, new_password: newPass })
+    });
+    const data = await res.json();
+    if (data.success) {
+      setAuthToken(data.token);
+      showToast('🔐 Master Admin Password updated successfully!', 'success');
+      document.getElementById('sec-current-password').value = '';
+      document.getElementById('sec-new-password').value = '';
+    } else {
+      showToast(data.error || 'Password update failed', 'alert');
+    }
+  } catch (err) {
+    showToast('Failed to update password: ' + err.message, 'alert');
+  }
+}
+
+// --- Auth Modal & Lock Screen Controller ---
+function showAuthModal(mode = 'login', customMsg = '') {
+  state.authMode = mode;
+  const modal = document.getElementById('auth-modal');
+  const title = document.getElementById('auth-modal-title');
+  const subtitle = document.getElementById('auth-modal-subtitle');
+  const icon = document.getElementById('auth-modal-icon');
+  const submitBtn = document.getElementById('btn-auth-submit');
+  const extraFields = document.getElementById('auth-setup-extra-fields');
+  const inputLabel = document.getElementById('auth-input-label');
+  const errorBox = document.getElementById('auth-error-msg');
+  const passwordInput = document.getElementById('auth-password-input');
+
+  if (errorBox) errorBox.style.display = 'none';
+  if (passwordInput) passwordInput.value = '';
+
+  if (mode === 'setup') {
+    icon.textContent = '🚀';
+    title.textContent = 'Setup Admin Master Password';
+    subtitle.textContent = customMsg || 'Create a strong master password to secure your WorkGuard Station.';
+    inputLabel.textContent = 'Master Password (Min 6 chars):';
+    submitBtn.textContent = '💾 Save Password & Access Station';
+    extraFields.style.display = 'block';
+  } else if (mode === 'lock') {
+    icon.textContent = '🔒';
+    title.textContent = 'WorkGuard Station Locked';
+    subtitle.textContent = customMsg || 'Enter your master password to resume session.';
+    inputLabel.textContent = 'Master Password:';
+    submitBtn.textContent = '🔓 Unlock Station';
+    extraFields.style.display = 'none';
+  } else {
+    icon.textContent = '🔐';
+    title.textContent = 'WorkGuard Admin Login';
+    subtitle.textContent = customMsg || 'Enter your master password to access the monitoring station.';
+    inputLabel.textContent = 'Master Password:';
+    submitBtn.textContent = '🔓 Unlock Admin Station';
+    extraFields.style.display = 'none';
+  }
+
+  if (modal) modal.classList.add('active');
+  if (passwordInput) passwordInput.focus();
+}
+
+function hideAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const password = document.getElementById('auth-password-input').value;
+  const errorBox = document.getElementById('auth-error-msg');
+
+  if (state.authMode === 'setup') {
+    const confirmPass = document.getElementById('auth-confirm-password-input').value;
+    if (password !== confirmPass) {
+      errorBox.textContent = 'Passwords do not match. Please re-enter.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (password.length < 6) {
+      errorBox.textContent = 'Password must be at least 6 characters long.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAuthToken(data.token);
+        hideAuthModal();
+        showToast('Master password created successfully!', 'success');
+        bootApplication();
+      } else {
+        errorBox.textContent = data.error || 'Setup failed';
+        errorBox.style.display = 'block';
+      }
+    } catch (err) {
+      errorBox.textContent = 'Connection error: ' + err.message;
+      errorBox.style.display = 'block';
+    }
+  } else {
+    // Login or Unlock
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAuthToken(data.token);
+        hideAuthModal();
+        showToast('Welcome back! Station unlocked.', 'success');
+        bootApplication();
+      } else {
+        errorBox.textContent = data.error || 'Incorrect master password.';
+        errorBox.style.display = 'block';
+      }
+    } catch (err) {
+      errorBox.textContent = 'Authentication error: ' + err.message;
+      errorBox.style.display = 'block';
+    }
+  }
+}
+
+// Initial Auth Check & Boot
+async function checkAuthAndBoot() {
+  try {
+    const res = await fetch('/api/auth/status');
+    const data = await res.json();
+
+    if (!data.is_password_set) {
+      // Prompt First-Time Setup Wizard
+      showAuthModal('setup');
+    } else {
+      const token = getAuthToken();
+      if (!token) {
+        showAuthModal('login');
+      } else {
+        // Verify existing token
+        const verifyRes = await fetch('/api/auth/verify', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (verifyRes.ok) {
+          bootApplication();
+        } else {
+          showAuthModal('login', 'Session expired. Please log in again.');
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Auth status check error:', err);
+    bootApplication();
+  }
+}
+
+function bootApplication() {
+  initTheme();
+  initWebSocket();
+  fetchClients();
+  fetchStats();
+  fetchPolicy();
+  fetchLogs();
+  fetchSecuritySettings();
+  fetchOTAStatus();
+}
+
 // Render Functions
 function updateStatsCards() {
   const clients = state.clients || [];
   const onlineCount = clients.filter(c => c.status === 'online').length;
-
+  
   document.getElementById('stat-total-clients').textContent = clients.length;
   document.getElementById('stat-online-clients').textContent = onlineCount;
-  document.getElementById('stat-today-shots').textContent = state.stats.today_screenshots || 0;
-  document.getElementById('stat-violations').textContent = state.stats.total_violations || 0;
+  
+  if (state.stats) {
+    if (state.stats.today_screenshots !== undefined) {
+      document.getElementById('stat-today-shots').textContent = state.stats.today_screenshots;
+    }
+    if (state.stats.total_violations !== undefined) {
+      document.getElementById('stat-violations').textContent = state.stats.total_violations;
+    }
+  }
+  
   document.getElementById('clients-count-badge').textContent = `${clients.length} Devices`;
 }
 
 function renderFleetOverview() {
   const container = document.getElementById('clients-grid');
-  const emptyState = document.getElementById('clients-empty');
-  const search = document.getElementById('client-search-input').value.toLowerCase();
+  const empty = document.getElementById('clients-empty');
+  const searchVal = document.getElementById('client-search-input').value.toLowerCase();
   const deptFilter = document.getElementById('filter-dept-select') ? document.getElementById('filter-dept-select').value : 'ALL';
 
-  let filtered = state.clients;
-  
-  if (deptFilter && deptFilter !== 'ALL') {
-    filtered = filtered.filter(c => (c.department || 'General') === deptFilter);
-  }
+  let filtered = state.clients.filter(c => {
+    const matchSearch = !searchVal || 
+      (c.hostname && c.hostname.toLowerCase().includes(searchVal)) ||
+      (c.username && c.username.toLowerCase().includes(searchVal)) ||
+      (c.employee_name && c.employee_name.toLowerCase().includes(searchVal)) ||
+      (c.department && c.department.toLowerCase().includes(searchVal)) ||
+      (c.ip && c.ip.includes(searchVal));
 
-  if (search) {
-    filtered = filtered.filter(c => 
-      (c.employee_name && c.employee_name.toLowerCase().includes(search)) ||
-      (c.department && c.department.toLowerCase().includes(search)) ||
-      c.hostname.toLowerCase().includes(search) ||
-      c.username.toLowerCase().includes(search) ||
-      c.ip.toLowerCase().includes(search) ||
-      (c.current_app && c.current_app.toLowerCase().includes(search))
-    );
-  }
+    const matchDept = deptFilter === 'ALL' || (c.department === deptFilter);
+    return matchSearch && matchDept;
+  });
 
   if (filtered.length === 0) {
     container.innerHTML = '';
-    container.appendChild(emptyState);
-    emptyState.style.display = 'flex';
+    container.appendChild(empty);
+    empty.style.display = 'flex';
     return;
   }
 
-  emptyState.style.display = 'none';
+  empty.style.display = 'none';
   container.innerHTML = '';
 
   filtered.forEach((client, idx) => {
     const isOnline = client.status === 'online';
     const card = document.createElement('div');
-    card.className = 'client-card';
+    card.className = `client-card glass-card ${isOnline ? 'online' : 'offline'}`;
+    
     const empName = client.employee_name || client.username || 'Employee';
     const empDept = client.department || 'General';
-    
-    // Generate initials
     const initials = empName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'EM';
     
-    // Curated accent color tones
     const colorTones = [
-      { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' }, // Blue
-      { bg: '#ecfdf5', text: '#047857', border: '#a7f3d0' }, // Sage green
-      { bg: '#fffbeb', text: '#b45309', border: '#fde68a' }, // Warm sand
-      { bg: '#f5f3ff', text: '#6d28d9', border: '#ddd6fe' }, // Lavender
-      { bg: '#fff1f2', text: '#be123c', border: '#fecdd3' }  // Rose
+      { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
+      { bg: '#ecfdf5', text: '#047857', border: '#a7f3d0' },
+      { bg: '#fffbeb', text: '#b45309', border: '#fde68a' },
+      { bg: '#f5f3ff', text: '#6d28d9', border: '#ddd6fe' },
+      { bg: '#fff1f2', text: '#be123c', border: '#fecdd3' }
     ];
     const tone = colorTones[idx % colorTones.length];
 
@@ -491,7 +872,7 @@ function triggerInstantSnap(clientId) {
     }));
     showToast('📸 Instant capture request sent to employee agent!', 'success');
   } else {
-    fetch(`/api/clients/${clientId}/capture`, { method: 'POST' })
+    authFetch(`/api/clients/${clientId}/capture`, { method: 'POST' })
       .then(() => showToast('📸 Instant capture requested', 'success'))
       .catch(e => showToast(`Error: ${e.message}`, 'alert'));
   }
@@ -500,17 +881,15 @@ function triggerInstantSnap(clientId) {
 // Analytics Loader & Renderer
 async function fetchAnalytics() {
   try {
-    const res = await fetch('/api/analytics');
+    const res = await authFetch('/api/analytics');
     const data = await res.json();
     if (!data.success) return;
 
-    // Update Top Stat Cards
     document.getElementById('analytics-dept-count').textContent = (data.departments || []).length;
     if (data.top_apps && data.top_apps.length > 0) {
       document.getElementById('analytics-top-app').textContent = data.top_apps[0].name;
     }
 
-    // Render Apps List
     const appsList = document.getElementById('analytics-apps-list');
     if (appsList) {
       if (!data.top_apps || data.top_apps.length === 0) {
@@ -530,7 +909,6 @@ async function fetchAnalytics() {
       }
     }
 
-    // Render Departments List
     const deptsList = document.getElementById('analytics-depts-list');
     if (deptsList) {
       if (!data.departments || data.departments.length === 0) {
@@ -596,13 +974,15 @@ function renderScreenshotsGrid() {
     const client = state.clients.find(c => c.id === shot.client_id) || { hostname: shot.client_id };
     const timeFormatted = new Date(shot.timestamp).toLocaleTimeString();
     const dateFormatted = new Date(shot.timestamp).toLocaleDateString();
+    const secureUrl = getSecureImageUrl(shot.filepath);
 
     const item = document.createElement('div');
     item.className = 'screenshot-item';
     item.onclick = () => openLightbox(shot, client);
     item.innerHTML = `
       <div class="screenshot-thumb-holder">
-        <img src="${shot.filepath}" alt="Screenshot" loading="lazy">
+        <img src="${secureUrl}" alt="Screenshot" loading="lazy">
+        ${shot.is_encrypted ? '<span style="position: absolute; bottom: 6px; right: 6px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.2); font-size: 10px; padding: 2px 6px; border-radius: 4px; color: #38bdf8;">🔒 AES-256</span>' : ''}
       </div>
       <div class="screenshot-item-body">
         <div class="screenshot-meta-top">
@@ -715,10 +1095,11 @@ function openLightbox(shot, client) {
   const meta = document.getElementById('modal-meta');
   const downloadLink = document.getElementById('modal-download-link');
 
-  img.src = shot.filepath;
+  const secureUrl = getSecureImageUrl(shot.filepath);
+  img.src = secureUrl;
   title.textContent = `Workstation: ${client.hostname} (${client.username || 'User'})`;
-  meta.textContent = `${new Date(shot.timestamp).toLocaleString()} | App: ${shot.active_app} | Window: ${shot.active_window}`;
-  downloadLink.href = shot.filepath;
+  meta.textContent = `${new Date(shot.timestamp).toLocaleString()} | App: ${shot.active_app} | Window: ${shot.active_window} ${shot.is_encrypted ? '(🔒 Decrypted from AES-256 storage)' : ''}`;
+  downloadLink.href = secureUrl;
   modal.classList.add('active');
 }
 
@@ -742,7 +1123,11 @@ function switchTab(tabId) {
     screenshots: ['Screenshot Timeline', 'Automated periodic silent captures & activity history'],
     analytics: ['Productivity & Analytics', 'Workforce application usage ranking & department distribution'],
     policies: ['Whitelists & Rules', 'Application & website restriction policies'],
-    logs: ['Activity & Audit Logs', 'Tamper-evident logs of rule violations and system events']
+    security: ['Security & Privacy Governance', 'Master authentication, PSK agent tokens, storage encryption, and PII masking'],
+    alerts: ['Alerts & Webhooks', 'Automated push notifications for prohibited applications and policy breaches'],
+    rbac: ['Admin Roles & RBAC', 'Multi-user administrator accounts and departmental access permissions'],
+    logs: ['Activity & Audit Logs', 'Tamper-evident logs of rule violations and system events'],
+    database: ['Database Studio & Storage Manager', 'Live SQLite table browser, inline record editing, and automated photo retention']
   };
 
   if (titles[tabId]) {
@@ -752,9 +1137,20 @@ function switchTab(tabId) {
 
   if (tabId === 'screenshots') fetchScreenshots();
   if (tabId === 'policies') fetchPolicy();
+  if (tabId === 'security') fetchSecuritySettings();
+  if (tabId === 'alerts') {
+    loadAlertAppRules();
+    loadAlertWebhooks();
+    loadLiveAlertsFeed();
+  }
+  if (tabId === 'rbac') loadRbacUsers();
   if (tabId === 'logs') fetchLogs();
   if (tabId === 'analytics') fetchAnalytics();
   if (tabId === 'overview') fetchClients();
+  if (tabId === 'database') {
+    fetchDatabaseStats();
+    loadActiveDatabaseTable();
+  }
 }
 
 function openLiveStreamFor(clientId) {
@@ -770,32 +1166,6 @@ function filterGalleryByClient(clientId) {
   switchTab('screenshots');
   document.getElementById('gallery-client-filter').value = clientId;
   fetchScreenshots();
-}
-
-// Manager Direct Message Modal
-function openAdminMessageModal(preselectClientId = 'ALL') {
-  const modal = document.getElementById('admin-message-modal');
-  const targetSelect = document.getElementById('msg-target-select');
-  if (!modal || !targetSelect) return;
-
-  targetSelect.innerHTML = '<option value="ALL">📢 Broadcast to ALL Workstations</option>';
-  state.clients.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = `💻 ${c.employee_name || c.username || c.hostname} (${c.department || 'General'})`;
-    targetSelect.appendChild(opt);
-  });
-
-  if (preselectClientId) {
-    targetSelect.value = preselectClientId;
-  }
-
-  modal.classList.add('active');
-}
-
-function closeAdminMessageModal() {
-  const modal = document.getElementById('admin-message-modal');
-  if (modal) modal.classList.remove('active');
 }
 
 function showToast(message, type = 'info') {
@@ -822,6 +1192,45 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchStats();
     showToast('Fleet data refreshed', 'success');
   });
+
+  // Lock Station buttons
+  const btnLockTopbar = document.getElementById('btn-lock-topbar');
+  if (btnLockTopbar) btnLockTopbar.addEventListener('click', () => lockStation('Admin Station locked manually.'));
+
+  const btnSidebarLock = document.getElementById('btn-sidebar-lock');
+  if (btnSidebarLock) btnSidebarLock.addEventListener('click', () => lockStation('Admin Station locked manually.'));
+
+  // Auth Modal Form
+  const formAuth = document.getElementById('form-auth-login');
+  if (formAuth) formAuth.addEventListener('submit', handleAuthSubmit);
+
+  // Security Controls Listeners
+  const btnSaveSec = document.getElementById('btn-save-security');
+  if (btnSaveSec) btnSaveSec.addEventListener('click', saveSecuritySettings);
+
+  const btnUpdatePass = document.getElementById('btn-update-admin-pass');
+  if (btnUpdatePass) btnUpdatePass.addEventListener('click', updateAdminPassword);
+
+  const btnCopyAgentKey = document.getElementById('btn-copy-agent-key');
+  if (btnCopyAgentKey) {
+    btnCopyAgentKey.addEventListener('click', () => {
+      const keyVal = document.getElementById('sec-agent-secret-key').value;
+      navigator.clipboard.writeText(keyVal).then(() => {
+        showToast('📋 Agent Secret Key copied to clipboard!', 'success');
+      });
+    });
+  }
+
+  const btnGenAgentKey = document.getElementById('btn-gen-agent-key');
+  if (btnGenAgentKey) {
+    btnGenAgentKey.addEventListener('click', () => {
+      const arr = new Uint8Array(16);
+      crypto.getRandomValues(arr);
+      const newKey = 'wg-' + Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+      document.getElementById('sec-agent-secret-key').value = newKey;
+      showToast('🎲 New Agent Key generated! Remember to click "Save Security Configuration".', 'info');
+    });
+  }
 
   // Stream controls
   const streamSelect = document.getElementById('stream-client-select');
@@ -879,7 +1288,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const openStorageHandler = async () => {
     try {
-      const res = await fetch('/api/settings/open-storage-folder', { method: 'POST' });
+      const res = await authFetch('/api/settings/open-storage-folder', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         showToast(`Opened storage folder: ${data.path}`, 'success');
@@ -902,14 +1311,14 @@ document.addEventListener('DOMContentLoaded', () => {
       btnCleanNow.textContent = 'Cleaning...';
       btnCleanNow.disabled = true;
       try {
-        const res = await fetch('/api/screenshots/cleanup', {
+        const res = await authFetch('/api/screenshots/cleanup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ days })
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`Cleanup complete: Removed ${data.deletedCount} screenshots (${(data.freedBytes / (1024 * 1024)).toFixed(1)} MB freed)`, 'success');
+          showToast(`Cleanup complete: Shredded ${data.deletedCount} screenshots (${(data.freedBytes / (1024 * 1024)).toFixed(1)} MB freed)`, 'success');
           fetchScreenshots();
           fetchStats();
           fetchLogs();
@@ -992,32 +1401,23 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('live-clock').textContent = new Date().toLocaleTimeString();
   }, 1000);
 
-  // Electron Desktop Station Integration
-  if (window.electronAPI && window.electronAPI.isElectron) {
-    const openFolderBtn = document.getElementById('btn-open-storage-folder');
-    if (openFolderBtn) {
-      openFolderBtn.style.display = 'inline-flex';
-      openFolderBtn.addEventListener('click', () => {
-        if (typeof window.electronAPI.openStorageFolder === 'function') {
-          window.electronAPI.openStorageFolder();
-        }
-      });
-    }
-  }
-
-  // Theme Toggle Management
+  // Theme Toggle
   const btnThemeToggle = document.getElementById('btn-theme-toggle');
   if (btnThemeToggle) {
     btnThemeToggle.addEventListener('click', toggleTheme);
   }
 
-  // Initial Boot
-  initTheme();
-  initWebSocket();
-  fetchClients();
-  fetchStats();
-  fetchPolicy();
-  fetchLogs();
+  // Start Inactivity Watcher
+  startInactivityWatcher();
+
+  // Database Studio Toolbar & Modal Listeners
+  initDatabaseStudioListeners();
+
+  // Enterprise Alerts & RBAC Listeners
+  initEnterpriseSubsystemListeners();
+
+  // Check Master Auth Status & Boot
+  checkAuthAndBoot();
 });
 
 // Theme Management
@@ -1055,7 +1455,7 @@ function openPhoneModal() {
   if (!modal) return;
   modal.classList.add('active');
 
-  const lanIp = '192.168.2.136';
+  const lanIp = '127.0.0.1';
   const port = window.location.port || '3000';
   const phoneUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? `http://${lanIp}:${port}`
@@ -1065,20 +1465,17 @@ function openPhoneModal() {
   renderQrCode(phoneUrl);
 }
 
-// Pure Client-Side Offline QR Code Renderer
 function renderQrCode(text) {
   const container = document.getElementById('phone-qr-container');
   if (!container) return;
   container.innerHTML = '';
 
-  // Use QuickChart / standard offline SVG generator or canvas QR
   const qrImg = document.createElement('img');
   qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(text)}&margin=1`;
   qrImg.alt = 'Scan QR Code';
   qrImg.style.width = '100%';
   qrImg.style.height = '100%';
   qrImg.onerror = () => {
-    // Fallback if no external internet (draw local visual guide)
     container.innerHTML = `
       <div style="text-align:center; padding:12px; font-size:0.75rem; color:#1e293b; font-weight:600;">
         <div style="font-size:1.8rem; margin-bottom:4px;">🌐</div>
@@ -1109,7 +1506,7 @@ function closeAdminEditProfileModal() {
   if (modal) modal.classList.remove('active');
 }
 
-// Wire up Edit Profile Form and Filter Listeners
+// Wire up Edit Profile Form
 document.addEventListener('DOMContentLoaded', () => {
   const editModalClose = document.getElementById('admin-edit-modal-close');
   const editModalCancel = document.getElementById('btn-cancel-edit-profile');
@@ -1138,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveBtn.textContent = 'Saving...';
 
       try {
-        const res = await fetch(`/api/clients/${clientId}/profile`, {
+        const res = await authFetch(`/api/clients/${clientId}/profile`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ employee_name: empName, department: dept })
@@ -1182,6 +1579,79 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Auto-Update on Connect Toggle Listener
+  const otaAutoToggle = document.getElementById('ota-auto-connect-toggle');
+  if (otaAutoToggle) {
+    otaAutoToggle.addEventListener('change', async (e) => {
+      const isEnabled = e.target.checked;
+      const pill = document.getElementById('ota-auto-status-pill');
+      if (pill) {
+        pill.textContent = isEnabled ? 'Active' : 'Disabled';
+        pill.style.background = isEnabled ? 'var(--emerald-light)' : 'var(--rose-light)';
+        pill.style.color = isEnabled ? 'var(--emerald)' : 'var(--rose)';
+        pill.style.borderColor = isEnabled ? 'var(--emerald-pill)' : 'var(--rose-pill)';
+      }
+      try {
+        const res = await authFetch('/api/updates/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ auto_update_on_connect: isEnabled })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`⚡ Zero-Touch Auto-Update on Connect is now ${isEnabled ? 'ENABLED' : 'DISABLED'}`, isEnabled ? 'success' : 'info');
+        }
+      } catch (err) {
+        showToast('Failed to update config: ' + err.message, 'alert');
+      }
+    });
+  }
+
+  // Cloud URL Release Ingestion Listener
+  const btnFetchCloud = document.getElementById('btn-fetch-cloud-release');
+  if (btnFetchCloud) {
+    btnFetchCloud.addEventListener('click', async () => {
+      const urlInput = document.getElementById('ota-cloud-url-input');
+      const versionInput = document.getElementById('ota-cloud-version-input');
+      const cloudUrl = urlInput ? urlInput.value.trim() : '';
+      const version = versionInput ? versionInput.value.trim() : '';
+
+      if (!cloudUrl) {
+        showToast('Please enter a valid remote Cloud URL for the update package (.zip)', 'alert');
+        return;
+      }
+
+      btnFetchCloud.textContent = '📥 Fetching...';
+      btnFetchCloud.disabled = true;
+
+      try {
+        const res = await authFetch('/api/updates/fetch-cloud', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cloud_url: cloudUrl,
+            version: version || null,
+            auto_deploy: true
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ ${data.message}`, 'success');
+          if (urlInput) urlInput.value = '';
+          if (versionInput) versionInput.value = '';
+          fetchOTAStatus();
+        } else {
+          showToast(`Cloud fetch error: ${data.error}`, 'alert');
+        }
+      } catch (err) {
+        showToast(`Failed to fetch cloud release: ${err.message}`, 'alert');
+      } finally {
+        btnFetchCloud.textContent = '☁️ Fetch from Cloud';
+        btnFetchCloud.disabled = false;
+      }
+    });
+  }
+
   const btnUploadOTABundle = document.getElementById('btn-upload-ota-bundle');
   const fileInputOTABundle = document.getElementById('ota-bundle-file-input');
   if (btnUploadOTABundle && fileInputOTABundle) {
@@ -1200,7 +1670,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnUploadOTABundle.disabled = true;
 
       try {
-        const res = await fetch('/api/updates/upload-bundle', {
+        const res = await authFetch('/api/updates/upload-bundle', {
           method: 'POST',
           body: formData
         });
@@ -1214,36 +1684,46 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         showToast(`Upload error: ${err.message}`, 'alert');
       } finally {
-        btnUploadOTABundle.textContent = '📦 Upload New .ZIP';
+        btnUploadOTABundle.textContent = '📦 Upload Local .ZIP';
         btnUploadOTABundle.disabled = false;
         fileInputOTABundle.value = '';
       }
     });
   }
-
-  // Fetch initial OTA Status
-  fetchOTAStatus();
 });
 
 // --- OTA Remote Client Updates Manager ---
 async function fetchOTAStatus() {
   try {
-    const res = await fetch('/api/updates/status');
+    const res = await authFetch('/api/updates/status');
     const data = await res.json();
     if (!data.success) return;
 
-    state.latestAgentVersion = data.latest_version;
+    state.latestAgentVersion = data.version;
     const badge = document.getElementById('ota-server-version-badge');
     const versionText = document.getElementById('ota-latest-version-text');
     const countUpToDate = document.getElementById('ota-count-uptodate');
     const countOutdated = document.getElementById('ota-count-outdated');
+    const autoToggle = document.getElementById('ota-auto-connect-toggle');
+    const autoPill = document.getElementById('ota-auto-status-pill');
 
-    if (badge) badge.textContent = `Release v${data.latest_version}`;
-    if (versionText) versionText.textContent = `v${data.latest_version}`;
-    if (countUpToDate) countUpToDate.textContent = data.fleet.up_to_date;
-    if (countOutdated) countOutdated.textContent = data.fleet.outdated;
+    if (badge) badge.textContent = `Release v${data.version}`;
+    if (versionText) versionText.textContent = `v${data.version}`;
+    if (countUpToDate) countUpToDate.textContent = (data.total_clients || 0) - (data.outdated_count || 0);
+    if (countOutdated) countOutdated.textContent = data.outdated_count || 0;
 
-    renderOTAFleetList(data.fleet.clients, data.latest_version);
+    if (autoToggle && data.auto_update_on_connect !== undefined) {
+      autoToggle.checked = !!data.auto_update_on_connect;
+    }
+    if (autoPill && data.auto_update_on_connect !== undefined) {
+      const isAuto = !!data.auto_update_on_connect;
+      autoPill.textContent = isAuto ? 'Active' : 'Disabled';
+      autoPill.style.background = isAuto ? 'var(--emerald-light)' : 'var(--rose-light)';
+      autoPill.style.color = isAuto ? 'var(--emerald)' : 'var(--rose)';
+      autoPill.style.borderColor = isAuto ? 'var(--emerald-pill)' : 'var(--rose-pill)';
+    }
+
+    renderOTAFleetList(data.clients || state.clients, data.version);
   } catch (err) {
     console.error('Failed to fetch OTA status:', err);
   }
@@ -1290,14 +1770,14 @@ function renderOTAFleetList(clients, latestVersion) {
 async function deployOTAUpdateTo(clientId, force = false) {
   try {
     showToast(`🚀 Dispatched OTA update command to ${clientId === 'all' ? 'all workstations' : clientId}...`, 'info');
-    const res = await fetch('/api/updates/deploy', {
+    const res = await authFetch('/api/updates/deploy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ target_client_id: clientId, force })
     });
     const data = await res.json();
     if (data.success) {
-      showToast(data.message, 'success');
+      showToast('OTA update dispatched successfully', 'success');
       fetchOTAStatus();
     } else {
       showToast(`OTA Error: ${data.error}`, 'alert');
@@ -1364,5 +1844,985 @@ function handleOTAUpdateProgress(data) {
   }
 }
 
+// ==========================================
+// 🗄️ DATABASE STUDIO & LIVE STORAGE MANAGER
+// ==========================================
 
+function initDatabaseStudioListeners() {
+  const tableSelect = document.getElementById('db-table-select');
+  if (tableSelect) {
+    tableSelect.addEventListener('change', () => {
+      state.dbStudio.activeTable = tableSelect.value;
+      state.dbStudio.currentPage = 1;
+      state.dbStudio.search = '';
+      const searchInput = document.getElementById('db-table-search');
+      if (searchInput) searchInput.value = '';
+      loadActiveDatabaseTable();
+    });
+  }
 
+  const searchInput = document.getElementById('db-table-search');
+  if (searchInput) {
+    let debounceTimer = null;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        state.dbStudio.search = searchInput.value.trim();
+        state.dbStudio.currentPage = 1;
+        loadActiveDatabaseTable();
+      }, 300);
+    });
+  }
+
+  const btnRefresh = document.getElementById('btn-db-refresh-table');
+  if (btnRefresh) {
+    btnRefresh.addEventListener('click', () => {
+      loadActiveDatabaseTable();
+      fetchDatabaseStats();
+      showToast('Table refreshed', 'info');
+    });
+  }
+
+  const btnAdd = document.getElementById('btn-db-add-record');
+  if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+      openDatabaseRecordModal('add', null);
+    });
+  }
+
+  const limitSelect = document.getElementById('db-limit-select');
+  if (limitSelect) {
+    limitSelect.addEventListener('change', () => {
+      state.dbStudio.limit = parseInt(limitSelect.value, 10) || 20;
+      state.dbStudio.currentPage = 1;
+      loadActiveDatabaseTable();
+    });
+  }
+
+  const btnPrev = document.getElementById('btn-db-prev-page');
+  if (btnPrev) {
+    btnPrev.addEventListener('click', () => {
+      if (state.dbStudio.currentPage > 1) {
+        state.dbStudio.currentPage--;
+        loadActiveDatabaseTable();
+      }
+    });
+  }
+
+  const btnNext = document.getElementById('btn-db-next-page');
+  if (btnNext) {
+    btnNext.addEventListener('click', () => {
+      if (state.dbStudio.currentPage < state.dbStudio.totalPages) {
+        state.dbStudio.currentPage++;
+        loadActiveDatabaseTable();
+      }
+    });
+  }
+
+  // Backup & Purge Buttons
+  const btnPurge = document.getElementById('btn-db-purge-retention');
+  if (btnPurge) {
+    btnPurge.addEventListener('click', triggerDatabaseRetentionPurge);
+  }
+
+  const btnExportDb = document.getElementById('btn-db-export-sqlite');
+  if (btnExportDb) {
+    btnExportDb.addEventListener('click', () => {
+      const token = getAuthToken();
+      window.open(`/api/database/export/sqlite?token=${encodeURIComponent(token)}`, '_blank');
+      showToast('📥 Downloading raw workguard.db SQLite backup...', 'success');
+    });
+  }
+
+  const btnExportJson = document.getElementById('btn-db-export-json');
+  if (btnExportJson) {
+    btnExportJson.addEventListener('click', () => {
+      const token = getAuthToken();
+      window.open(`/api/database/export/json?token=${encodeURIComponent(token)}`, '_blank');
+      showToast('📥 Downloading JSON database export...', 'success');
+    });
+  }
+
+  // Record Modal Listeners
+  const modalClose = document.getElementById('db-record-modal-close');
+  const modalCancel = document.getElementById('btn-cancel-db-record');
+  const modalOverlay = document.getElementById('db-record-overlay');
+  const formRecord = document.getElementById('form-db-record');
+
+  if (modalClose) modalClose.addEventListener('click', closeDatabaseRecordModal);
+  if (modalCancel) modalCancel.addEventListener('click', closeDatabaseRecordModal);
+  if (modalOverlay) modalOverlay.addEventListener('click', closeDatabaseRecordModal);
+  if (formRecord) formRecord.addEventListener('submit', handleSaveDatabaseRecord);
+}
+
+async function fetchDatabaseStats() {
+  try {
+    const res = await authFetch('/api/database/stats');
+    const data = await res.json();
+    if (data.success && data.stats) {
+      const s = data.stats;
+      document.getElementById('db-stat-filesize').textContent = s.db_file_size_formatted || '-- MB';
+      document.getElementById('db-stat-shots-count').textContent = (s.table_counts.screenshots || 0).toLocaleString();
+      document.getElementById('db-stat-shots-size').textContent = `${s.screenshot_storage_formatted} on disk`;
+      document.getElementById('db-stat-clients-count').textContent = (s.table_counts.clients || 0).toLocaleString();
+      document.getElementById('db-stat-retention-days').textContent = `${s.retention_days} Days`;
+    }
+  } catch (err) {
+    console.error('[DB Studio] Stats error:', err);
+  }
+}
+
+async function loadActiveDatabaseTable() {
+  const table = state.dbStudio.activeTable;
+  const page = state.dbStudio.currentPage;
+  const limit = state.dbStudio.limit;
+  const search = state.dbStudio.search;
+
+  const thead = document.getElementById('db-studio-thead');
+  const tbody = document.getElementById('db-studio-tbody');
+  
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--text-muted);">⏳ Loading table '${table}'...</td></tr>`;
+  }
+
+  try {
+    let url = `/api/database/table/${table}?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+
+    const res = await authFetch(url);
+    const data = await res.json();
+
+    if (data.success) {
+      state.dbStudio.totalRecords = data.total_records || 0;
+      state.dbStudio.totalPages = data.total_pages || 1;
+      renderDatabaseTable(table, data.records || [], page, data.total_records, data.total_pages);
+    } else {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--rose);">Error loading table: ${data.error}</td></tr>`;
+    }
+  } catch (err) {
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--rose);">Failed to fetch records: ${err.message}</td></tr>`;
+    }
+  }
+}
+
+function renderDatabaseTable(table, records, page, totalRecords, totalPages) {
+  const thead = document.getElementById('db-studio-thead');
+  const tbody = document.getElementById('db-studio-tbody');
+  const pageInfo = document.getElementById('db-pagination-info');
+  const pageIndicator = document.getElementById('db-page-indicator');
+  const btnPrev = document.getElementById('btn-db-prev-page');
+  const btnNext = document.getElementById('btn-db-next-page');
+
+  // Update Pagination Bar
+  const limit = state.dbStudio.limit;
+  const start = totalRecords === 0 ? 0 : (page - 1) * limit + 1;
+  const end = Math.min(page * limit, totalRecords);
+  if (pageInfo) pageInfo.textContent = `Showing ${start}-${end} of ${totalRecords.toLocaleString()} records`;
+  if (pageIndicator) pageIndicator.textContent = `Page ${page} of ${totalPages || 1}`;
+  if (btnPrev) btnPrev.disabled = page <= 1;
+  if (btnNext) btnNext.disabled = page >= totalPages;
+
+  if (records.length === 0) {
+    thead.innerHTML = `<tr><th style="padding: 12px;">Result</th></tr>`;
+    tbody.innerHTML = `<tr><td style="text-align: center; padding: 28px; color: var(--text-muted);">No records found matching query in table <strong>${table}</strong>.</td></tr>`;
+    return;
+  }
+
+  // Determine Columns from first record
+  const columns = Object.keys(records[0]);
+  
+  // Render THEAD
+  thead.innerHTML = `
+    <tr>
+      <th style="width: 90px; text-align: center;">Actions</th>
+      ${columns.map(c => `<th>${c}</th>`).join('')}
+    </tr>
+  `;
+
+  // Render TBODY
+  tbody.innerHTML = '';
+  records.forEach((row, rowIndex) => {
+    const tr = document.createElement('tr');
+    const rowId = row.id !== undefined ? row.id : (row.key !== undefined ? row.key : rowIndex);
+    const rowJson = encodeURIComponent(JSON.stringify(row));
+
+    let cellsHtml = `
+      <td style="text-align: center; white-space: nowrap;">
+        <button class="btn btn-secondary btn-xs" onclick="openDatabaseRecordModalFromRow('${rowJson}')" title="Edit row" style="padding: 3px 6px;">✏️</button>
+        <button class="btn btn-secondary btn-xs" onclick="confirmDeleteDatabaseRecord('${table}', '${encodeURIComponent(rowId)}')" title="Delete row" style="padding: 3px 6px; color: var(--rose);">🗑️</button>
+      </td>
+    `;
+
+    columns.forEach(col => {
+      let val = row[col];
+      let formattedVal = '';
+
+      if (val === null || val === undefined) {
+        formattedVal = '<span style="color: var(--text-dim); font-style: italic;">null</span>';
+      } else if (typeof val === 'boolean' || val === 1 && (col === 'is_encrypted' || col === 'pause_on_sensitive')) {
+        formattedVal = `<span class="badge-pill" style="font-size: 10px; background: ${val ? 'var(--emerald-light)' : 'var(--border-subtle)'}; color: ${val ? 'var(--emerald)' : 'var(--text-muted)'};">${Boolean(val)}</span>`;
+      } else if (col === 'status') {
+        formattedVal = `<span class="badge-pill ${val === 'online' ? 'online' : 'offline'}" style="font-size: 10px;">${val}</span>`;
+      } else if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+        // Pretty JSON preview tag
+        try {
+          const parsed = JSON.parse(val);
+          const isArr = Array.isArray(parsed);
+          formattedVal = `<span class="badge-pill" style="font-family: 'JetBrains Mono'; font-size: 10px; background: rgba(99,102,241,0.1); color: var(--primary); cursor: pointer;" title="${escapeHtml(val)}">${isArr ? `Array(${parsed.length})` : 'Object {...}'}</span>`;
+        } catch (e) {
+          formattedVal = escapeHtml(String(val).substring(0, 40));
+        }
+      } else if (typeof val === 'string' && val.length > 50) {
+        formattedVal = `<span title="${escapeHtml(val)}" style="cursor: help;">${escapeHtml(val.substring(0, 47))}...</span>`;
+      } else {
+        formattedVal = escapeHtml(String(val));
+      }
+
+      cellsHtml += `<td style="font-family: ${col.includes('id') || col.includes('hash') || col.includes('time') || col.includes('key') ? "'JetBrains Mono'" : 'inherit'}; font-size: 0.8rem;">${formattedVal}</td>`;
+    });
+
+    tr.innerHTML = cellsHtml;
+    tbody.appendChild(tr);
+  });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+window.openDatabaseRecordModalFromRow = function(encodedRow) {
+  try {
+    const record = JSON.parse(decodeURIComponent(encodedRow));
+    openDatabaseRecordModal('edit', record);
+  } catch (e) {
+    showToast('Failed to open record: ' + e.message, 'alert');
+  }
+};
+
+window.confirmDeleteDatabaseRecord = async function(table, encodedId) {
+  const id = decodeURIComponent(encodedId);
+  if (!confirm(`Are you sure you want to permanently delete record '${id}' from '${table}'?`)) {
+    return;
+  }
+
+  try {
+    const res = await authFetch(`/api/database/table/${table}/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Deleted record '${id}' from ${table}`, 'success');
+      loadActiveDatabaseTable();
+      fetchDatabaseStats();
+    } else {
+      showToast(`Delete failed: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Error deleting record: ${err.message}`, 'alert');
+  }
+};
+
+function openDatabaseRecordModal(mode, record) {
+  const table = state.dbStudio.activeTable;
+  state.dbStudio.modalMode = mode;
+  state.dbStudio.currentRecord = record;
+
+  const modal = document.getElementById('db-record-modal');
+  const title = document.getElementById('db-record-modal-title');
+  const subtitle = document.getElementById('db-record-modal-subtitle');
+  const container = document.getElementById('db-record-fields-container');
+
+  title.textContent = mode === 'add' ? `➕ Add Record to ${table}` : `✏️ Edit Record in ${table}`;
+  subtitle.textContent = `Table: ${table} (${mode === 'add' ? 'New Entry' : (record.id || record.key || '')})`;
+
+  container.innerHTML = '';
+
+  let fields = [];
+  if (table === 'clients') {
+    fields = [
+      { key: 'id', label: 'Client ID', type: 'text', readonly: mode === 'edit', required: true, default: `client-${Date.now().toString(36)}` },
+      { key: 'employee_name', label: 'Employee Full Name', type: 'text', required: true, default: 'Employee Name' },
+      { key: 'department', label: 'Department', type: 'text', default: 'General' },
+      { key: 'hostname', label: 'Host / PC Name', type: 'text', default: 'DESKTOP-PC' },
+      { key: 'username', label: 'OS Username', type: 'text', default: 'user' },
+      { key: 'ip', label: 'IP Address', type: 'text', default: '127.0.0.1' },
+      { key: 'os', label: 'Operating System', type: 'text', default: 'Windows_NT' },
+      { key: 'agent_version', label: 'Agent Version', type: 'text', default: '1.2.0' },
+      { key: 'status', label: 'Status (online/offline)', type: 'select', options: ['online', 'offline'], default: 'offline' }
+    ];
+  } else if (table === 'policies') {
+    fields = [
+      { key: 'id', label: 'Policy ID', type: 'text', readonly: mode === 'edit', required: true, default: 'custom-policy' },
+      { key: 'name', label: 'Policy Name', type: 'text', required: true, default: 'Custom Policy' },
+      { key: 'policy_mode', label: 'Policy Mode', type: 'select', options: ['audit-alert', 'strict-block'], default: 'audit-alert' },
+      { key: 'retention_days', label: 'Retention Period (Days)', type: 'number', default: 20 },
+      { key: 'capture_interval_sec', label: 'Capture Interval (Seconds)', type: 'number', default: 600 },
+      { key: 'stream_fps', label: 'Stream FPS', type: 'number', default: 15 },
+      { key: 'work_hours_start', label: 'Work Hours Start', type: 'text', default: '09:00' },
+      { key: 'work_hours_end', label: 'Work Hours End', type: 'text', default: '18:00' },
+      { key: 'allowed_apps_json', label: 'Allowed Apps (JSON Array)', type: 'textarea', default: '["code.exe","chrome.exe","slack.exe"]' },
+      { key: 'allowed_domains_json', label: 'Allowed Domains (JSON Array)', type: 'textarea', default: '["github.com","google.com","slack.com"]' }
+    ];
+  } else if (table === 'security_settings') {
+    fields = [
+      { key: 'key', label: 'Setting Key', type: 'text', readonly: mode === 'edit', required: true, default: 'custom_setting' },
+      { key: 'value', label: 'Setting Value', type: 'text', required: true, default: '' }
+    ];
+  } else if (table === 'screenshots') {
+    fields = [
+      { key: 'id', label: 'Screenshot ID', type: 'text', readonly: true },
+      { key: 'client_id', label: 'Client ID', type: 'text', readonly: true },
+      { key: 'active_app', label: 'Active App', type: 'text' },
+      { key: 'active_window', label: 'Active Window Title', type: 'text' },
+      { key: 'timestamp', label: 'Timestamp', type: 'text', readonly: true },
+      { key: 'filepath', label: 'File Path', type: 'text', readonly: true }
+    ];
+  } else if (table === 'audit_logs') {
+    fields = [
+      { key: 'id', label: 'Log ID', type: 'text', readonly: true },
+      { key: 'event_type', label: 'Event Type', type: 'text', readonly: true },
+      { key: 'client_id', label: 'Workstation / Actor', type: 'text', readonly: true },
+      { key: 'details', label: 'Event Details', type: 'text', readonly: true },
+      { key: 'timestamp', label: 'Timestamp', type: 'text', readonly: true },
+      { key: 'hash', label: 'Cryptographic Hash', type: 'text', readonly: true }
+    ];
+  }
+
+  fields.forEach(f => {
+    const val = record && record[f.key] !== undefined ? record[f.key] : (f.default !== undefined ? f.default : '');
+    const div = document.createElement('div');
+
+    if (f.type === 'textarea') {
+      div.innerHTML = `
+        <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">${f.label}:</label>
+        <textarea name="${f.key}" class="input-search" style="width: 100%; height: 75px; font-family: 'JetBrains Mono'; font-size: 0.8rem; resize: vertical;" ${f.readonly ? 'readonly' : ''} ${f.required ? 'required' : ''}>${escapeHtml(val)}</textarea>
+      `;
+    } else if (f.type === 'select') {
+      div.innerHTML = `
+        <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">${f.label}:</label>
+        <select name="${f.key}" class="select-dropdown" style="width: 100%;">
+          ${f.options.map(opt => `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+        </select>
+      `;
+    } else {
+      div.innerHTML = `
+        <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">${f.label}:</label>
+        <input type="${f.type || 'text'}" name="${f.key}" class="input-search" value="${escapeHtml(val)}" style="width: 100%; font-family: ${f.key.includes('id') || f.key.includes('time') ? "'JetBrains Mono'" : 'inherit'}; font-size: 0.82rem;" ${f.readonly ? 'readonly' : ''} ${f.required ? 'required' : ''}>
+      `;
+    }
+
+    container.appendChild(div);
+  });
+
+  modal.classList.add('active');
+}
+
+function closeDatabaseRecordModal() {
+  const modal = document.getElementById('db-record-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function handleSaveDatabaseRecord(e) {
+  if (e) e.preventDefault();
+  const form = document.getElementById('form-db-record');
+  const formData = new FormData(form);
+  const data = {};
+
+  formData.forEach((val, key) => {
+    data[key] = val;
+  });
+
+  const table = state.dbStudio.activeTable;
+  const mode = state.dbStudio.modalMode;
+  const currentRecord = state.dbStudio.currentRecord;
+  const recordId = currentRecord ? (currentRecord.id || currentRecord.key) : (data.id || data.key);
+
+  try {
+    let url = `/api/database/table/${table}`;
+    let method = 'POST';
+
+    if (mode === 'edit') {
+      url += `/${encodeURIComponent(recordId)}`;
+      method = 'PUT';
+    }
+
+    const res = await authFetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    const resData = await res.json();
+    if (resData.success) {
+      showToast(mode === 'add' ? `Record added to ${table} successfully!` : `Record updated in ${table}!`, 'success');
+      closeDatabaseRecordModal();
+      loadActiveDatabaseTable();
+      fetchDatabaseStats();
+      if (table === 'clients') fetchClients();
+      if (table === 'policies') fetchPolicy();
+    } else {
+      showToast(`Error saving record: ${resData.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Failed to save record: ${err.message}`, 'alert');
+  }
+}
+
+async function triggerDatabaseRetentionPurge() {
+  const btn = document.getElementById('btn-db-purge-retention');
+  if (!confirm('Run automatic photo retention cleanup now? This will permanently delete screenshots older than your retention policy from disk and database.')) {
+    return;
+  }
+
+  if (btn) {
+    btn.textContent = '🧹 Purging...';
+    btn.disabled = true;
+  }
+
+  try {
+    const res = await authFetch('/api/database/purge-retention', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      const count = data.result.deletedCount || 0;
+      const mb = (data.result.freedBytes / (1024 * 1024)).toFixed(2);
+      showToast(`✨ Retention cleanup complete! Shredded ${count} expired photos (${mb} MB freed).`, 'success');
+      fetchDatabaseStats();
+      loadActiveDatabaseTable();
+      fetchScreenshots();
+      fetchLogs();
+    } else {
+      showToast(`Purge failed: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Retention purge error: ${err.message}`, 'alert');
+  } finally {
+    if (btn) {
+      btn.textContent = '🧹 Purge Expired Photos';
+      btn.disabled = false;
+    }
+  }
+}
+
+// ==========================================
+// ENTERPRISE: RBAC & MULTI-ADMIN FRONTEND
+// ==========================================
+async function loadRbacUsers() {
+  const tbody = document.getElementById('rbac-users-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">Loading admin users...</td></tr>';
+
+  try {
+    const res = await authFetch('/api/rbac/users');
+    const data = await res.json();
+
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 20px;">${data.error || 'Access restricted to SuperAdmin'}</td></tr>`;
+      return;
+    }
+
+    if (data.users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">No additional admin accounts configured.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.users.forEach(u => {
+      const tr = document.createElement('tr');
+      
+      let roleBadge = '<span class="status-pill status-online" style="background: rgba(99,102,241,0.15); color: #818cf8;">SuperAdmin</span>';
+      if (u.role === 'dept_manager') {
+        roleBadge = '<span class="status-pill status-online" style="background: rgba(16,185,129,0.15); color: #34d399;">Dept Manager</span>';
+      } else if (u.role === 'auditor') {
+        roleBadge = '<span class="status-pill status-idle" style="background: rgba(245,158,11,0.15); color: #fbbf24;">Auditor</span>';
+      }
+
+      const depts = Array.isArray(u.allowed_departments) ? u.allowed_departments.join(', ') : 'ALL';
+      const statusBadge = u.is_active ? 
+        '<span style="color: #10B981; font-weight: 700;">Active</span>' : 
+        '<span style="color: #F43F5E; font-weight: 700;">Disabled</span>';
+
+      tr.innerHTML = `
+        <td style="font-family: 'JetBrains Mono'; font-weight: 700;">${escapeHtml(u.username)}</td>
+        <td>${escapeHtml(u.full_name || u.username)}</td>
+        <td>${roleBadge}</td>
+        <td><span style="font-size: 0.8rem; background: var(--bg-surface); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-subtle);">${escapeHtml(depts)}</span></td>
+        <td>${statusBadge}</td>
+        <td style="font-size: 0.8rem; color: var(--text-muted);">${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</td>
+        <td style="text-align: right;">
+          <button class="btn btn-secondary btn-xs btn-edit-rbac" data-user='${escapeHtml(JSON.stringify(u))}'>✏️ Edit</button>
+          <button class="btn btn-secondary btn-xs btn-delete-rbac" data-id="${u.id}" data-name="${escapeHtml(u.username)}" style="color: var(--danger); margin-left: 4px;">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Wire action buttons
+    tbody.querySelectorAll('.btn-edit-rbac').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const u = JSON.parse(e.currentTarget.dataset.user);
+        openRbacUserModal(u);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-delete-rbac').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const name = e.currentTarget.dataset.name;
+        deleteRbacUser(id, name);
+      });
+    });
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 20px;">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function openRbacUserModal(user = null) {
+  const modal = document.getElementById('rbac-user-modal');
+  const title = document.getElementById('rbac-user-modal-title');
+  const idInput = document.getElementById('rbac-user-id');
+  const userInput = document.getElementById('rbac-username');
+  const nameInput = document.getElementById('rbac-fullname');
+  const passInput = document.getElementById('rbac-password');
+  const passLabel = document.getElementById('rbac-password-label');
+  const roleSelect = document.getElementById('rbac-role-select');
+  const deptsInput = document.getElementById('rbac-departments');
+
+  if (user) {
+    title.textContent = '✏️ Edit Admin Account';
+    idInput.value = user.id;
+    userInput.value = user.username;
+    userInput.disabled = true;
+    nameInput.value = user.full_name || '';
+    passInput.value = '';
+    passInput.placeholder = 'Leave blank to keep current password...';
+    passLabel.textContent = 'New Password (Optional):';
+    roleSelect.value = user.role || 'dept_manager';
+    deptsInput.value = Array.isArray(user.allowed_departments) ? user.allowed_departments.join(', ') : 'ALL';
+  } else {
+    title.textContent = '👥 Create Admin Account';
+    idInput.value = '';
+    userInput.value = '';
+    userInput.disabled = false;
+    nameInput.value = '';
+    passInput.value = '';
+    passInput.placeholder = 'Enter secure password...';
+    passLabel.textContent = 'Password:';
+    roleSelect.value = 'dept_manager';
+    deptsInput.value = 'ALL';
+  }
+
+  modal.classList.add('active');
+}
+
+function closeRbacUserModal() {
+  const modal = document.getElementById('rbac-user-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function saveRbacUser(e) {
+  if (e) e.preventDefault();
+  const id = document.getElementById('rbac-user-id').value;
+  const username = document.getElementById('rbac-username').value.trim();
+  const full_name = document.getElementById('rbac-fullname').value.trim();
+  const password = document.getElementById('rbac-password').value.trim();
+  const role = document.getElementById('rbac-role-select').value;
+  const deptsRaw = document.getElementById('rbac-departments').value.trim();
+
+  const allowed_departments = deptsRaw.split(',').map(d => d.trim()).filter(Boolean);
+
+  const payload = { full_name, role, allowed_departments };
+  if (!id) {
+    if (!username || !password) {
+      showToast('Username and password are required', 'alert');
+      return;
+    }
+    payload.username = username;
+    payload.password = password;
+  } else {
+    if (password) payload.password = password;
+  }
+
+  try {
+    const url = id ? `/api/rbac/users/${id}` : '/api/rbac/users';
+    const method = id ? 'PUT' : 'POST';
+
+    const res = await authFetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToast(id ? 'Admin account updated successfully!' : 'Admin account created successfully!', 'success');
+      closeRbacUserModal();
+      loadRbacUsers();
+    } else {
+      showToast(`Error: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Failed to save admin user: ${err.message}`, 'alert');
+  }
+}
+
+async function deleteRbacUser(id, username) {
+  if (!confirm(`Are you sure you want to delete admin account '${username}'?`)) return;
+
+  try {
+    const res = await authFetch(`/api/rbac/users/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Admin account '${username}' deleted.`, 'success');
+      loadRbacUsers();
+    } else {
+      showToast(`Delete failed: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Error deleting user: ${err.message}`, 'alert');
+  }
+}
+
+// ==========================================
+// ENTERPRISE: APPLICATION ALERT RULES ("ADD APPLICATION TOOL")
+// ==========================================
+async function loadAlertAppRules() {
+  const tbody = document.getElementById('app-rules-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 15px;">Loading alert rules...</td></tr>';
+
+  try {
+    const res = await authFetch('/api/alerts/app-rules');
+    const data = await res.json();
+
+    if (!data.success || data.rules.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 15px;">No application trigger rules configured.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.rules.forEach(r => {
+      const tr = document.createElement('tr');
+      let sevBadge = '<span class="status-pill status-idle" style="background: rgba(245,158,11,0.15); color: #fbbf24;">⚠️ Warning</span>';
+      if (r.severity === 'critical') {
+        sevBadge = '<span class="status-pill status-offline" style="background: rgba(244,63,94,0.15); color: #fda4af;">🚨 Critical</span>';
+      } else if (r.severity === 'info') {
+        sevBadge = '<span class="status-pill status-online" style="background: rgba(59,130,246,0.15); color: #60a5fa;">ℹ️ Info</span>';
+      }
+
+      tr.innerHTML = `
+        <td style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--text-main);">${escapeHtml(r.app_name)}</td>
+        <td>${sevBadge}</td>
+        <td><code style="font-size: 0.8rem;">${escapeHtml(r.action)}</code></td>
+        <td style="font-size: 0.82rem; color: var(--text-muted);">${escapeHtml(r.custom_message || 'Prohibited application')}</td>
+        <td style="text-align: right;">
+          <button class="btn btn-secondary btn-xs btn-delete-app-rule" data-id="${r.id}" data-name="${escapeHtml(r.app_name)}" style="color: var(--danger);">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.btn-delete-app-rule').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const name = e.currentTarget.dataset.name;
+        deleteAlertAppRule(id, name);
+      });
+    });
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 15px;">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function openAlertAppModal() {
+  document.getElementById('alert-app-name-input').value = '';
+  document.getElementById('alert-app-msg').value = '';
+  document.getElementById('alert-app-modal').classList.add('active');
+}
+
+function closeAlertAppModal() {
+  document.getElementById('alert-app-modal').classList.remove('active');
+}
+
+async function saveAlertAppRule(e) {
+  if (e) e.preventDefault();
+  const app_name = document.getElementById('alert-app-name-input').value.trim();
+  const severity = document.getElementById('alert-app-severity').value;
+  const action = document.getElementById('alert-app-action').value;
+  const custom_message = document.getElementById('alert-app-msg').value.trim();
+
+  if (!app_name) {
+    showToast('Application executable name is required', 'alert');
+    return;
+  }
+
+  try {
+    const res = await authFetch('/api/alerts/app-rules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_name, severity, action, custom_message })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToast(`⚡ Alert rule for '${app_name}' created!`, 'success');
+      closeAlertAppModal();
+      loadAlertAppRules();
+    } else {
+      showToast(`Error: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Failed to add rule: ${err.message}`, 'alert');
+  }
+}
+
+async function deleteAlertAppRule(id, appName) {
+  if (!confirm(`Delete alert trigger rule for '${appName}'?`)) return;
+
+  try {
+    const res = await authFetch(`/api/alerts/app-rules/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Rule for '${appName}' removed.`, 'success');
+      loadAlertAppRules();
+    } else {
+      showToast(`Error: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Delete failed: ${err.message}`, 'alert');
+  }
+}
+
+// ==========================================
+// ENTERPRISE: WEBHOOK DESTINATIONS
+// ==========================================
+async function loadAlertWebhooks() {
+  const tbody = document.getElementById('webhooks-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 15px;">Loading webhooks...</td></tr>';
+
+  try {
+    const res = await authFetch('/api/alerts/webhooks');
+    const data = await res.json();
+
+    if (!data.success || data.webhooks.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 15px;">No webhooks connected yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.webhooks.forEach(wh => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight: 700;">${escapeHtml(wh.name)}</td>
+        <td><span style="font-size: 0.8rem; background: var(--bg-surface); padding: 3px 8px; border-radius: 6px; text-transform: uppercase;">${wh.type}</span></td>
+        <td>${wh.is_enabled ? '<span style="color: #10B981; font-weight: 700;">● Active</span>' : '<span style="color: var(--text-muted);">Disabled</span>'}</td>
+        <td style="text-align: right;">
+          <button class="btn btn-secondary btn-xs btn-test-webhook" data-url="${escapeHtml(wh.webhook_url)}" data-type="${wh.type}">🧪 Test</button>
+          <button class="btn btn-secondary btn-xs btn-delete-webhook" data-id="${wh.id}" data-name="${escapeHtml(wh.name)}" style="color: var(--danger); margin-left: 4px;">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.btn-test-webhook').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const url = e.currentTarget.dataset.url;
+        const type = e.currentTarget.dataset.type;
+        testAlertWebhook(url, type);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-delete-webhook').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const name = e.currentTarget.dataset.name;
+        deleteAlertWebhook(id, name);
+      });
+    });
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--danger); padding: 15px;">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function openAlertWebhookModal() {
+  document.getElementById('webhook-id').value = '';
+  document.getElementById('webhook-name-input').value = '';
+  document.getElementById('webhook-url-input').value = '';
+  document.getElementById('alert-webhook-modal').classList.add('active');
+}
+
+function closeAlertWebhookModal() {
+  document.getElementById('alert-webhook-modal').classList.remove('active');
+}
+
+async function saveAlertWebhook(e) {
+  if (e) e.preventDefault();
+  const id = document.getElementById('webhook-id').value;
+  const name = document.getElementById('webhook-name-input').value.trim();
+  const type = document.getElementById('webhook-type-select').value;
+  const webhook_url = document.getElementById('webhook-url-input').value.trim();
+
+  if (!name || !webhook_url) {
+    showToast('Name and Webhook URL are required', 'alert');
+    return;
+  }
+
+  try {
+    const res = await authFetch('/api/alerts/webhooks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id || undefined, name, type, webhook_url })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToast(`🌐 Webhook '${name}' connected!`, 'success');
+      closeAlertWebhookModal();
+      loadAlertWebhooks();
+    } else {
+      showToast(`Error: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Failed to connect webhook: ${err.message}`, 'alert');
+  }
+}
+
+async function deleteAlertWebhook(id, name) {
+  if (!confirm(`Disconnect webhook '${name}'?`)) return;
+
+  try {
+    const res = await authFetch(`/api/alerts/webhooks/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Webhook '${name}' deleted.`, 'success');
+      loadAlertWebhooks();
+    } else {
+      showToast(`Error: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Delete failed: ${err.message}`, 'alert');
+  }
+}
+
+async function testAlertWebhook(url = null, type = 'slack') {
+  const targetUrl = url || document.getElementById('webhook-url-input').value.trim();
+  const targetType = url ? type : document.getElementById('webhook-type-select').value;
+
+  if (!targetUrl) {
+    showToast('Please enter a Webhook URL to test', 'alert');
+    return;
+  }
+
+  showToast('Sending test alert payload...', 'info');
+
+  try {
+    const res = await authFetch('/api/alerts/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: targetUrl, type: targetType })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ Test notification sent successfully to destination!', 'success');
+    } else {
+      showToast(`Webhook test failed: ${data.error}`, 'alert');
+    }
+  } catch (err) {
+    showToast(`Connection error: ${err.message}`, 'alert');
+  }
+}
+
+// ==========================================
+// ENTERPRISE: LIVE ALERTS FEED
+// ==========================================
+async function loadLiveAlertsFeed() {
+  const tbody = document.getElementById('live-alerts-feed-tbody');
+  if (!tbody) return;
+
+  try {
+    const res = await authFetch('/api/alerts/recent');
+    const data = await res.json();
+
+    if (!data.success || data.alerts.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 15px;">No recent security alerts recorded.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.alerts.forEach(a => {
+      const tr = document.createElement('tr');
+      const timeStr = new Date(a.timestamp).toLocaleTimeString();
+      let sevColor = '#3B82F6';
+      if (a.severity === 'critical') sevColor = '#E11D48';
+      if (a.severity === 'warning') sevColor = '#F59E0B';
+
+      tr.innerHTML = `
+        <td style="font-size: 0.8rem; color: var(--text-muted);">${timeStr}</td>
+        <td><span style="color: ${sevColor}; font-weight: 800; text-transform: uppercase;">● ${a.severity}</span></td>
+        <td style="font-weight: 700;">${escapeHtml(a.workstation.hostname)}</td>
+        <td>${escapeHtml(a.workstation.employee_name)}</td>
+        <td style="font-family: 'JetBrains Mono'; font-weight: 700; color: #f43f5e;">${escapeHtml(a.app_name)}</td>
+        <td style="font-size: 0.82rem; color: var(--text-muted); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(a.workstation.active_window)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 15px;">Error: ${err.message}</td></tr>`;
+  }
+}
+
+// ==========================================
+// ENTERPRISE: SUBSYSTEM EVENT LISTENERS
+// ==========================================
+function initEnterpriseSubsystemListeners() {
+  // RBAC Listeners
+  const btnCreateAdmin = document.getElementById('btn-create-admin-user-open');
+  if (btnCreateAdmin) btnCreateAdmin.addEventListener('click', () => openRbacUserModal());
+
+  const btnCloseRbac = document.getElementById('rbac-user-modal-close');
+  if (btnCloseRbac) btnCloseRbac.addEventListener('click', closeRbacUserModal);
+
+  const btnCancelRbac = document.getElementById('btn-cancel-rbac-user');
+  if (btnCancelRbac) btnCancelRbac.addEventListener('click', closeRbacUserModal);
+
+  const formRbac = document.getElementById('form-rbac-user');
+  if (formRbac) formRbac.addEventListener('submit', saveRbacUser);
+
+  // App Alert Rules Listeners
+  const btnAddAppRule = document.getElementById('btn-add-app-rule-modal-open');
+  if (btnAddAppRule) btnAddAppRule.addEventListener('click', openAlertAppModal);
+
+  const btnCloseAlertApp = document.getElementById('alert-app-modal-close');
+  if (btnCloseAlertApp) btnCloseAlertApp.addEventListener('click', closeAlertAppModal);
+
+  const btnCancelAlertApp = document.getElementById('btn-cancel-alert-app');
+  if (btnCancelAlertApp) btnCancelAlertApp.addEventListener('click', closeAlertAppModal);
+
+  const formAlertApp = document.getElementById('form-alert-app');
+  if (formAlertApp) formAlertApp.addEventListener('submit', saveAlertAppRule);
+
+  // Webhook Listeners
+  const btnAddWebhook = document.getElementById('btn-add-webhook-modal-open');
+  if (btnAddWebhook) btnAddWebhook.addEventListener('click', openAlertWebhookModal);
+
+  const btnCloseAlertWh = document.getElementById('alert-webhook-modal-close');
+  if (btnCloseAlertWh) btnCloseAlertWh.addEventListener('click', closeAlertWebhookModal);
+
+  const btnCancelAlertWh = document.getElementById('btn-cancel-alert-webhook');
+  if (btnCancelAlertWh) btnCancelAlertWh.addEventListener('click', closeAlertWebhookModal);
+
+  const formAlertWh = document.getElementById('form-alert-webhook');
+  if (formAlertWh) formAlertWh.addEventListener('submit', saveAlertWebhook);
+
+  const btnTestWh = document.getElementById('btn-test-webhook-connection');
+  if (btnTestWh) btnTestWh.addEventListener('click', () => testAlertWebhook());
+}

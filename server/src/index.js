@@ -6,38 +6,42 @@ const fs = require('fs');
 const apiRoutes = require('./routes/api');
 const WebSocketServerHandler = require('./websocket');
 const DiscoveryBeacon = require('./discovery_beacon');
+const storageManager = require('./storage_manager');
+const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Enable CORS for LAN access
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// Enable CORS with LAN support
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-agent-auth']
+}));
 
-const storageManager = require('./storage_manager');
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Serve uploaded screenshots as static files from configured local storage directory
-app.use('/screenshots-raw', (req, res, next) => {
-  const localDir = storageManager.getLocalStorageDir();
-  express.static(localDir)(req, res, next);
+// Forward legacy /screenshots-raw requests to authenticated API endpoint
+app.use('/screenshots-raw/:clientId/:date/:filename', (req, res) => {
+  const { clientId, date, filename } = req.params;
+  const token = req.query.token || (req.headers.authorization ? req.headers.authorization.replace('Bearer ', '') : '');
+  res.redirect(`/api/screenshots/raw/${clientId}/${date}/${filename}?token=${encodeURIComponent(token)}`);
 });
 
-// Serve Admin Web Dashboard
+// Serve Admin Web Dashboard Static Assets
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// API Routes
+// Mount Main API Routes
 app.use('/api', apiRoutes);
 
 // Catch-all for SPA client routing
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/screenshots-raw')) {
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(404).json({ error: 'Endpoint not found' });
   }
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
-
-const db = require('./db');
 
 // Create HTTP Server and bind WebSocket relay
 const server = http.createServer(app);
@@ -63,9 +67,11 @@ function startServer(port = PORT) {
       }, 6 * 60 * 60 * 1000);
 
       console.log(`=======================================================`);
-      console.log(`🚀 WorkGuard Admin Backend Coordinator Started`);
+      console.log(`🛡️ WorkGuard Secure Admin Coordinator Started`);
       console.log(`📡 Local Network Port:   ${port}`);
-      console.log(`🔌 WebSocket Relay:      ws://localhost:${port}/ws`);
+      console.log(`🔌 WebSocket Relay:      ws://0.0.0.0:${port}/ws`);
+      console.log(`🔐 Admin Security:       ${db.isPasswordSet() ? 'Password Protected' : 'Setup Required (Unprotected)'}`);
+      console.log(`🗄️ AES-256 Storage:      ${db.isEncryptionEnabled() ? 'ENABLED (Encrypted at Rest)' : 'Standard'}`);
       console.log(`📁 Screenshot Storage:   ${storageManager.getLocalStorageDir()}`);
       console.log(`🧹 Auto-Cleanup Policy:  Active (Deletes > 15-20 Days)`);
       console.log(`=======================================================`);
@@ -119,4 +125,3 @@ module.exports = {
   stopServer,
   PORT
 };
-

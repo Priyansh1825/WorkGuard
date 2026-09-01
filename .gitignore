@@ -6,12 +6,18 @@ package-lock.json
 dist/
 *.zip
 
-# Runtime storage, databases & buffers
-server/storage/screenshots/
-server/storage/database.json
+# Runtime storage, databases, screenshots & buffers
+server/storage/
 client/storage_buffer/
 client/bin/screengrab.exe
+storage/screenshots/
+storage/backups/
 *.log
+*.db
+*.db-wal
+*.db-shm
+*.db.backup
+*.sqlite
 
 # OS / IDE artifacts
 .DS_Store
@@ -26,3 +32,9 @@ inspector/
 inspect-system.bat
 inspect-system.vbs
 package-inspector.bat
+
+# Local Test Environment Sandbox (Do NOT push to GitHub)
+test_env/
+test-environment/
+*.test.db
+*.test.json

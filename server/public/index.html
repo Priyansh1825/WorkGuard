@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WorkGuard Admin | Desktop Monitoring Station</title>
+  <title>WorkGuard Admin | Secure Desktop Monitoring Station</title>
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
         </div>
         <div class="brand-text">
           <h2>WorkGuard</h2>
-          <span class="badge-offline">OFFLINE LAN MODE</span>
+          <span class="badge-offline">SECURE LAN MODE</span>
         </div>
         <button class="mobile-close-btn" id="mobile-sidebar-close">&times;</button>
       </div>
@@ -41,15 +41,31 @@
         </button>
         <button class="nav-item" data-tab="analytics">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-          <span>Productivity & Apps</span>
+          <span>Productivity &amp; Apps</span>
         </button>
         <button class="nav-item" data-tab="policies">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
-          <span>Whitelists & Rules</span>
+          <span>Whitelists &amp; Rules</span>
+        </button>
+        <button class="nav-item" data-tab="security">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>Security &amp; Privacy</span>
+        </button>
+        <button class="nav-item" data-tab="alerts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span>Alerts &amp; Webhooks</span>
+        </button>
+        <button class="nav-item" data-tab="rbac">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Admin Roles &amp; RBAC</span>
         </button>
         <button class="nav-item" data-tab="logs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
           <span>Audit Logs</span>
+        </button>
+        <button class="nav-item" data-tab="database">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+          <span>Database Studio</span>
         </button>
       </nav>
 
@@ -61,6 +77,9 @@
             <span class="status-desc" id="server-status-text">Connected (Port 3000)</span>
           </div>
         </div>
+        <button class="btn btn-secondary btn-xs" id="btn-sidebar-lock" style="width: 100%; margin-top: 8px; justify-content: center; gap: 6px;">
+          🔒 Lock Station
+        </button>
       </div>
     </aside>
 
@@ -85,6 +104,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
             <span>Export CSV</span>
           </a>
+          <button class="btn btn-secondary btn-sm" id="btn-lock-topbar" title="Lock Admin Station">
+            <span>🔒 Lock</span>
+          </button>
           <button class="btn btn-secondary btn-sm" id="btn-theme-toggle" title="Switch Theme (Light / Dark Mode)">
             <span id="theme-icon">☀️</span>
             <span id="theme-text">Light Mode</span>
@@ -102,7 +124,7 @@
 
       <!-- TAB 1: FLEET OVERVIEW -->
       <section class="tab-content active" id="tab-overview">
-        <!-- Hero Proof & Headline Banner (Matching Reference Design) -->
+        <!-- Hero Proof & Headline Banner -->
         <div class="hero-proof-banner">
           <div class="pill-proof-badge">
             <div class="pill-avatars">
@@ -110,7 +132,7 @@
               <span>👩</span>
               <span>👨</span>
             </div>
-            <span>🟢 100% Offline LAN • Zero Cloud Dependence • Auto-Purge Active</span>
+            <span>🛡️ End-to-End Encrypted • PSK Agent Handshake • Privacy Shield Active</span>
           </div>
           <h2 class="hero-proof-headline">Live Fleet Clarity. Complete Control.</h2>
           <p class="hero-proof-sub">Real-time workstation telemetry, instant 60 FPS live screen monitoring, and transparent department productivity analytics.</p>
@@ -300,10 +322,10 @@
         </div>
       </section>
 
-      <!-- TAB: PRODUCTIVITY & APPS ANALYTICS -->
+      <!-- TAB 4: PRODUCTIVITY & APPS ANALYTICS -->
       <section class="tab-content" id="tab-analytics">
         <div class="hero-proof-banner" style="margin-bottom: 24px;">
-          <h2 class="hero-proof-headline">Workforce Productivity & Application Metrics</h2>
+          <h2 class="hero-proof-headline">Workforce Productivity &amp; Application Metrics</h2>
           <p class="hero-proof-sub">Real-time breakdown of active programs, department distribution, and focus allocation across your company network.</p>
         </div>
 
@@ -377,7 +399,7 @@
         <div class="policy-container glass-card">
           <div class="policy-header">
             <div>
-              <h2>Application & Website Whitelisting Policy</h2>
+              <h2>Application &amp; Website Whitelisting Policy</h2>
               <p>Configure which applications and websites employees are permitted to use during business hours.</p>
             </div>
             <button class="btn btn-primary" id="btn-save-policy">
@@ -495,22 +517,51 @@
 
             <!-- Remote 1-Click Client Agent OTA Updater -->
             <div class="rule-box ota-updater-box" style="grid-column: span 2; background: var(--bg-card); border: 1px solid var(--primary-pill);">
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 1.1rem;">🚀</span>
-                    <label style="font-size: 1rem; font-weight: 800; color: var(--text-main);">Remote Client Agent OTA Updater</label>
+                    <label style="font-size: 1rem; font-weight: 800; color: var(--text-main);">Remote Client Agent OTA &amp; Release Distribution</label>
                     <span class="badge-pill" id="ota-server-version-badge" style="background: var(--primary-light); color: var(--primary); font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; border: 1px solid var(--primary-pill);">Release v1.2.0</span>
                   </div>
                   <span class="rule-subtext">Push code, binary updates, and new features remotely across all employee workstations without manual re-installation.</span>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                   <input type="file" id="ota-bundle-file-input" accept=".zip" style="display: none;">
-                  <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-ota-bundle" title="Upload custom client agent package zip">
-                    📦 Upload New .ZIP
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-ota-bundle" title="Upload custom client agent package zip from PC">
+                    📦 Upload Local .ZIP
                   </button>
                   <button type="button" class="btn btn-primary btn-sm" id="btn-deploy-ota-all" style="background: linear-gradient(135deg, #4f46e5, #06b6d4); color: #fff;">
                     🚀 Deploy 1-Click Update to Fleet
+                  </button>
+                </div>
+              </div>
+
+              <!-- Auto-Deploy on Connect Toggle -->
+              <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 12px;">
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                    <span>⚡ Zero-Touch Auto-Update on Connect</span>
+                    <span class="badge-pill" id="ota-auto-status-pill" style="background: var(--emerald-light); color: var(--emerald); font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 9999px; border: 1px solid var(--emerald-pill);">Active</span>
+                  </div>
+                  <div style="font-size: 0.76rem; color: var(--text-muted);">When enabled, employee machines automatically download &amp; self-restart with new client releases as soon as they connect to the server.</div>
+                </div>
+                <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                  <input type="checkbox" id="ota-auto-connect-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                  <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px;"></span>
+                </label>
+              </div>
+
+              <!-- Cloud Release Fetcher Row -->
+              <div style="display: flex; flex-direction: column; gap: 8px; background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 14px;">
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                  <span>🌐 Ingest Release from Cloud URL / CDN / GitHub</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <input type="url" id="ota-cloud-url-input" class="select-dropdown" style="flex: 2; min-width: 250px; font-family: 'JetBrains Mono'; font-size: 0.82rem;" placeholder="https://cdn.example.com/workguard/client-v1.3.0.zip">
+                  <input type="text" id="ota-cloud-version-input" class="select-dropdown" style="width: 110px; font-family: 'JetBrains Mono'; font-size: 0.82rem;" placeholder="e.g. 1.3.0">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-fetch-cloud-release" style="white-space: nowrap; gap: 4px;">
+                    ☁️ Fetch from Cloud
                   </button>
                 </div>
               </div>
@@ -556,13 +607,130 @@
         </div>
       </section>
 
-      <!-- TAB 5: AUDIT LOGS -->
+      <!-- TAB 6: SECURITY & PRIVACY CONTROLS -->
+      <section class="tab-content" id="tab-security">
+        <div class="policy-container glass-card">
+          <div class="policy-header">
+            <div>
+              <h2>🛡️ Security &amp; Privacy Governance Controls</h2>
+              <p>Manage Admin authentication, Pre-Shared Agent secret keys, AES-256 storage encryption, and Privacy Shield auto-masking.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-save-security">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Security Configuration
+            </button>
+          </div>
+
+          <div class="policy-grid">
+            <!-- Left: Admin Password Management -->
+            <div class="policy-card">
+              <div class="policy-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <h3>Admin Master Password (PBKDF2 SHA-512)</h3>
+              </div>
+              <p class="policy-hint">Protects this station and REST API endpoints against unauthorized LAN access.</p>
+              
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <div>
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Current Password:</label>
+                  <input type="password" id="sec-current-password" class="input-search" style="width: 100%;" placeholder="Enter current admin password...">
+                </div>
+                <div>
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">New Master Password (Min 6 chars):</label>
+                  <input type="password" id="sec-new-password" class="input-search" style="width: 100%;" placeholder="Enter new master password...">
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-update-admin-pass" style="align-self: flex-start;">
+                  🔐 Update Master Password
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Pre-Shared Agent Secret Key (PSK) -->
+            <div class="policy-card">
+              <div class="policy-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                <h3>Pre-Shared Key (Agent PSK Handshake)</h3>
+              </div>
+              <p class="policy-hint">Secret token shared between client agents and the admin server to authenticate registrations and sign UDP beacons.</p>
+
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="sec-agent-secret-key" class="select-dropdown" style="flex: 1; font-family: 'JetBrains Mono'; font-size: 0.85rem;" value="workguard-lan-secret-key-2026">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-agent-key" title="Copy Agent Secret Key">
+                    📋 Copy
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-gen-agent-key" title="Generate New Cryptographic Key">
+                    🎲 Gen Key
+                  </button>
+                </div>
+                <span class="rule-subtext">⚠️ If changed, update the <code>auth_token</code> field in <code>client/config.json</code> across all employee endpoints.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: Privacy Shield & Storage Encryption -->
+          <div class="policy-rules-row">
+            <!-- Privacy Shield: Sensitive Window Auto-Masking -->
+            <div class="rule-box" style="grid-column: span 2; background: var(--bg-surface); border: 1px solid var(--border-hover);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 1.1rem;">🙈</span>
+                  <label style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">Privacy Shield (PII &amp; Sensitive Apps Auto-Masking)</label>
+                </div>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                  <input type="checkbox" id="sec-privacy-pause-toggle" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+                  <span>Auto-Pause Captures on Sensitive Windows</span>
+                </label>
+              </div>
+              <span class="rule-subtext">When an employee opens a banking site, password manager, or healthcare portal, WorkGuard automatically suspends screenshot capture and masks live streaming to comply with workplace privacy laws (GDPR, HIPAA, ECPA).</span>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+                <div>
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Protected App Executables (e.g. 1password.exe, bitwarden.exe):</label>
+                  <input type="text" id="sec-sensitive-apps" class="input-search" style="width: 100%; font-family: 'JetBrains Mono'; font-size: 0.8rem;" placeholder="1password.exe, bitwarden.exe, keepass.exe, authy.exe">
+                </div>
+                <div>
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Protected Window Title Keywords (e.g. banking, password, medical):</label>
+                  <input type="text" id="sec-sensitive-keywords" class="input-search" style="width: 100%; font-family: 'JetBrains Mono'; font-size: 0.8rem;" placeholder="password, bitwarden, bank, credit card, checkout, paypal, medical portal">
+                </div>
+              </div>
+            </div>
+
+            <!-- AES-256 Storage Encryption at Rest -->
+            <div class="rule-box">
+              <label>🗄️ AES-256-GCM Screenshot Storage Encryption:</label>
+              <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer;">
+                  <input type="checkbox" id="sec-aes-encryption-toggle" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                  <span>Encrypt Captured Screenshots on Disk (AES-256)</span>
+                </label>
+              </div>
+              <span class="rule-subtext">When active, files in <code>storage/screenshots/</code> are encrypted with AES-GCM and cannot be opened without the Admin Master Key.</span>
+            </div>
+
+            <!-- Inactivity Auto-Lockout -->
+            <div class="rule-box">
+              <label>⏱️ Station Inactivity Auto-Lockout:</label>
+              <select id="sec-session-timeout-select" class="select-dropdown">
+                <option value="5">Lock after 5 minutes of inactivity</option>
+                <option value="10">Lock after 10 minutes</option>
+                <option value="15" selected>Lock after 15 minutes (Recommended)</option>
+                <option value="30">Lock after 30 minutes</option>
+                <option value="60">Lock after 1 hour</option>
+              </select>
+              <span class="rule-subtext">Automatically locks the dashboard when unattended to protect employee data.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 7: AUDIT LOGS -->
       <section class="tab-content" id="tab-logs">
         <div class="glass-card logs-panel">
           <div class="logs-header">
             <div>
-              <h2>Activity &amp; Violation Audit Log</h2>
-              <p>Chronological record of workstation connections, policy changes, and blocked actions.</p>
+              <h2>Activity &amp; Cryptographic Audit Log</h2>
+              <p>Tamper-evident chronological chain (SHA-256) of workstation connections, security events, and policy violations.</p>
             </div>
             <button class="btn btn-secondary btn-sm" id="btn-refresh-logs">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
@@ -584,6 +752,255 @@
                 <!-- Dynamically populated -->
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+      <!-- TAB 8: DATABASE STUDIO & STORAGE MANAGER -->
+      <section class="tab-content" id="tab-database">
+        <div class="glass-card" style="padding: 24px;">
+          <!-- Top Header & Metrics Strip -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                <span>🗄️ Database Studio &amp; Live Storage Manager</span>
+                <span class="badge-pill" style="background: rgba(99, 102, 241, 0.15); color: var(--primary); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; border: 1px solid var(--primary-pill);">SQLite WAL Mode</span>
+              </h2>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Live table inspection, inline data editing, high-speed indexed search, automatic photo retention, and database exports.</p>
+            </div>
+            
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" id="btn-db-purge-retention" title="Purge expired screenshot files from disk and database">
+                🧹 Purge Expired Photos
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-db-export-sqlite" title="Download raw SQLite workguard.db backup">
+                💾 Download .DB Backup
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-db-export-json" title="Download portable JSON database export">
+                📋 Export JSON
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Stats Cards Strip -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <div style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Database File</span>
+              <div style="font-size: 1.15rem; font-weight: 800; color: var(--primary);" id="db-stat-filesize">-- MB</div>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">workguard.db</span>
+            </div>
+            <div style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Screenshots Stored</span>
+              <div style="font-size: 1.15rem; font-weight: 800; color: var(--emerald);" id="db-stat-shots-count">0</div>
+              <span style="font-size: 0.72rem; color: var(--text-muted);" id="db-stat-shots-size">0.00 MB on disk</span>
+            </div>
+            <div style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Clients</span>
+              <div style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);" id="db-stat-clients-count">0</div>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">Workstations registered</span>
+            </div>
+            <div style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Auto-Retention Policy</span>
+              <div style="font-size: 1.15rem; font-weight: 800; color: var(--sky);" id="db-stat-retention-days">20 Days</div>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">Auto-prune old photos</span>
+            </div>
+          </div>
+
+          <!-- Table Controls Toolbar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; background: var(--bg-surface); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Table:</label>
+                <select id="db-table-select" class="select-dropdown" style="min-width: 160px; font-weight: 700;">
+                  <option value="clients">👤 clients</option>
+                  <option value="screenshots">📸 screenshots</option>
+                  <option value="policies">📋 policies</option>
+                  <option value="audit_logs">🛡️ audit_logs</option>
+                  <option value="security_settings">🔐 security_settings</option>
+                </select>
+              </div>
+
+              <div style="position: relative; min-width: 240px;">
+                <input type="text" id="db-table-search" class="input-search" placeholder="Search table records..." style="width: 100%; border-radius: 8px; font-size: 0.82rem;">
+              </div>
+
+              <button class="btn btn-secondary btn-sm" id="btn-db-refresh-table" title="Refresh Table Data">
+                🔄 Refresh
+              </button>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn btn-primary btn-sm" id="btn-db-add-record" style="gap: 4px;">
+                ➕ Add Record
+              </button>
+            </div>
+          </div>
+
+          <!-- Table View Container -->
+          <div class="table-responsive" style="max-height: 520px; overflow: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--bg-card);">
+            <table class="data-table" id="db-studio-table">
+              <thead id="db-studio-thead">
+                <!-- Dynamically injected -->
+              </thead>
+              <tbody id="db-studio-tbody">
+                <!-- Dynamically injected -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 0.82rem; color: var(--text-muted);" id="db-pagination-info">
+              Showing 0-0 of 0 records
+            </div>
+            
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select id="db-limit-select" class="select-dropdown" style="padding: 4px 8px; font-size: 0.8rem;">
+                <option value="10">10 / page</option>
+                <option value="20" selected>20 / page</option>
+                <option value="50">50 / page</option>
+                <option value="100">100 / page</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" id="btn-db-prev-page">◀ Prev</button>
+              <span style="font-size: 0.82rem; font-weight: 700;" id="db-page-indicator">Page 1 of 1</span>
+              <button class="btn btn-secondary btn-sm" id="btn-db-next-page">Next ▶</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: REAL-TIME ALERTS & WEBHOOKS (Add Application Tool) -->
+      <section class="tab-content" id="tab-alerts">
+        <div class="policy-container glass-card">
+          <div class="policy-header">
+            <div>
+              <h2>🔔 Real-Time Alerts &amp; Webhook Dispatcher</h2>
+              <p>Configure automated push alerts for prohibited applications, policy breaches, and security triggers to Slack, Microsoft Teams, Discord, and Webhooks.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary btn-sm" id="btn-add-app-rule-modal-open" style="gap: 4px;">
+                ⚡ Add Application Alert
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-add-webhook-modal-open" style="gap: 4px;">
+                🌐 Connect Webhook
+              </button>
+            </div>
+          </div>
+
+          <!-- Alert Subsystem Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px;">
+            <!-- Left Card: Prohibited Application Triggers ("Add Application Tool") -->
+            <div class="policy-card" style="display: flex; flex-direction: column;">
+              <div class="policy-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+                <h3>⚡ Application Alert Trigger Rules</h3>
+              </div>
+              <p class="policy-hint">When an employee runs any of these executables, WorkGuard immediately dispatches an urgent push notification.</p>
+
+              <div class="table-responsive" style="margin-top: 12px; max-height: 300px; overflow: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Application</th>
+                      <th>Severity</th>
+                      <th>Action</th>
+                      <th>Message</th>
+                      <th style="text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="app-rules-tbody">
+                    <!-- Injected dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right Card: Webhook Destinations -->
+            <div class="policy-card" style="display: flex; flex-direction: column;">
+              <div class="policy-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+                <h3>🌐 Webhook Notification Channels</h3>
+              </div>
+              <p class="policy-hint">Integrated push targets for Slack, Microsoft Teams, Discord, and custom JSON webhook endpoints.</p>
+
+              <div class="table-responsive" style="margin-top: 12px; max-height: 300px; overflow: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Channel Name</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                      <th style="text-align: right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="webhooks-tbody">
+                    <!-- Injected dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: Live Real-Time Dispatched Alerts Feed -->
+          <div class="policy-card" style="margin-top: 20px;">
+            <div class="policy-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <h3>📡 Live Real-Time Dispatched Alert Feed</h3>
+            </div>
+            <p class="policy-hint">Log of security breaches and prohibited applications detected in real time.</p>
+
+            <div class="table-responsive" style="margin-top: 12px; max-height: 250px; overflow: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Severity</th>
+                    <th>Workstation</th>
+                    <th>Employee</th>
+                    <th>Application</th>
+                    <th>Active Window</th>
+                  </tr>
+                </thead>
+                <tbody id="live-alerts-feed-tbody">
+                  <!-- Injected dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: ADMIN ROLES & RBAC MANAGEMENT -->
+      <section class="tab-content" id="tab-rbac">
+        <div class="policy-container glass-card">
+          <div class="policy-header">
+            <div>
+              <h2>👥 Multi-Admin Role-Based Access Control (RBAC)</h2>
+              <p>Manage multi-user administrator accounts, assign departmental viewing scopes, and delegate monitoring roles.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-create-admin-user-open" style="gap: 4px;">
+              ➕ Create Admin User
+            </button>
+          </div>
+
+          <div class="policy-card" style="margin-top: 10px;">
+            <div class="table-responsive" style="max-height: 480px; overflow: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Department Scope</th>
+                    <th>Status</th>
+                    <th>Last Login</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="rbac-users-tbody">
+                  <!-- Injected dynamically -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -616,7 +1033,7 @@
     <div class="modal-content glass-card phone-modal-content">
       <div class="modal-header">
         <div class="modal-title-box">
-          <h3>📱 Open & Install on Android Phone</h3>
+          <h3>📱 Open &amp; Install on Android Phone</h3>
           <span class="modal-subtitle">Direct Wi-Fi / LAN Mobile Companion App</span>
         </div>
         <button class="modal-close-btn" id="phone-modal-close">&times;</button>
@@ -633,7 +1050,7 @@
               <li>Ensure your Android phone is connected to the same <strong>Wi-Fi</strong> network.</li>
               <li>Open Chrome on your phone and navigate to:
                 <div class="code-badge-copy" id="phone-url-copy-box">
-                  <span id="phone-lan-url">http://192.168.2.136:3000</span>
+                  <span id="phone-lan-url">http://127.0.0.1:3000</span>
                   <button class="btn btn-secondary btn-xs" id="btn-copy-lan-url">Copy</button>
                 </div>
               </li>
@@ -689,6 +1106,214 @@
           <div style="display: flex; gap: 10px; justify-content: flex-end;">
             <button type="button" class="btn btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
             <button type="submit" class="btn btn-primary" id="btn-save-edit-profile">💾 Save &amp; Sync Profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Master Authentication & Station Lock Screen Modal -->
+  <div class="modal" id="auth-modal" style="z-index: 99999;">
+    <div class="modal-overlay" id="auth-modal-overlay" style="background: rgba(11, 15, 25, 0.95); backdrop-filter: blur(16px);"></div>
+    <div class="modal-content glass-card" style="max-width: 420px; text-align: center; border: 1px solid rgba(99, 102, 241, 0.35); box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);">
+      <div style="padding: 24px 20px;">
+        <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: rgba(99, 102, 241, 0.15); border: 1px solid var(--primary-pill); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;">
+          <span id="auth-modal-icon">🔐</span>
+        </div>
+        
+        <h3 id="auth-modal-title" style="font-family: 'Outfit'; font-size: 1.4rem; font-weight: 800; margin-bottom: 6px;">WorkGuard Station Lock</h3>
+        <p id="auth-modal-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Enter your admin master password to access the monitoring station.</p>
+
+        <form id="form-auth-login" onsubmit="return false;">
+          <div id="auth-setup-extra-fields" style="display: none; margin-bottom: 12px; text-align: left;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Confirm Password:</label>
+            <input type="password" id="auth-confirm-password-input" class="input-search" style="width: 100%; border-radius: 8px;" placeholder="Re-enter password...">
+          </div>
+
+          <div style="margin-bottom: 16px; text-align: left;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;" id="auth-input-label">Master Password:</label>
+            <input type="password" id="auth-password-input" class="input-search" style="width: 100%; border-radius: 8px;" placeholder="••••••••••••" autofocus required>
+          </div>
+
+          <div id="auth-error-msg" style="display: none; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #fda4af; margin-bottom: 16px;"></div>
+
+          <button type="submit" class="btn btn-primary" id="btn-auth-submit" style="width: 100%; justify-content: center; padding: 10px; font-size: 14px; font-weight: 700;">
+            🔓 Unlock Admin Station
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database Studio Record Editor Modal -->
+  <div class="modal" id="db-record-modal">
+    <div class="modal-overlay" id="db-record-overlay"></div>
+    <div class="modal-content glass-card" style="max-width: 620px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3 id="db-record-modal-title">✏️ Edit Database Record</h3>
+          <span class="modal-subtitle" id="db-record-modal-subtitle">Table: clients</span>
+        </div>
+        <button class="modal-close-btn" id="db-record-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; padding: 16px 20px; flex: 1;">
+        <form id="form-db-record" onsubmit="return false;">
+          <div id="db-record-fields-container" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Dynamically injected form fields -->
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-db-record">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-db-record">💾 Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- RBAC Admin User Modal -->
+  <div class="modal" id="rbac-user-modal">
+    <div class="modal-overlay" id="rbac-user-overlay"></div>
+    <div class="modal-content glass-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3 id="rbac-user-modal-title">👥 Create Admin Account</h3>
+          <span class="modal-subtitle">Role-Based Access Control</span>
+        </div>
+        <button class="modal-close-btn" id="rbac-user-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px;">
+        <form id="form-rbac-user" onsubmit="return false;">
+          <input type="hidden" id="rbac-user-id">
+          
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Username:</label>
+            <input type="text" id="rbac-username" class="input-search" style="width: 100%;" placeholder="e.g. jsmith_manager" required>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Full Name:</label>
+            <input type="text" id="rbac-fullname" class="input-search" style="width: 100%;" placeholder="e.g. John Smith" required>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;" id="rbac-password-label">Password:</label>
+            <input type="password" id="rbac-password" class="input-search" style="width: 100%;" placeholder="Enter secure password...">
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Role Permission Level:</label>
+            <select id="rbac-role-select" class="select-dropdown" style="width: 100%;">
+              <option value="dept_manager">Department Manager (Scoped View)</option>
+              <option value="superadmin">Super Administrator (Full System Control)</option>
+              <option value="auditor">Compliance Auditor (Read-Only Logs)</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 16px;" id="rbac-depts-container">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Permitted Department Scope (comma-separated or ALL):</label>
+            <input type="text" id="rbac-departments" class="input-search" style="width: 100%;" placeholder="e.g. Engineering, Finance, or ALL" value="ALL">
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-rbac-user">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-rbac-user">💾 Save Admin Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Application Alert Rule Modal ("Add Application Tool") -->
+  <div class="modal" id="alert-app-modal">
+    <div class="modal-overlay" id="alert-app-overlay"></div>
+    <div class="modal-content glass-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3>⚡ Add Application Alert Trigger</h3>
+          <span class="modal-subtitle">Instant push alert when prohibited app is launched</span>
+        </div>
+        <button class="modal-close-btn" id="alert-app-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px;">
+        <form id="form-alert-app" onsubmit="return false;">
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Application Executable Name:</label>
+            <input type="text" id="alert-app-name-input" class="input-search" style="width: 100%; font-family: 'JetBrains Mono';" placeholder="e.g. utorrent.exe, telegram.exe, poker.exe, cmd.exe" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Severity Level:</label>
+              <select id="alert-app-severity" class="select-dropdown" style="width: 100%;">
+                <option value="critical">🚨 Critical Alert</option>
+                <option value="warning" selected>⚠️ Warning Alert</option>
+                <option value="info">ℹ️ Informational Notice</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Action Response:</label>
+              <select id="alert-app-action" class="select-dropdown" style="width: 100%;">
+                <option value="alert_only" selected>Push Alert Only</option>
+                <option value="alert_and_kill">Alert &amp; Terminate Process</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Custom Notification Text:</label>
+            <input type="text" id="alert-app-msg" class="input-search" style="width: 100%;" placeholder="e.g. Prohibited file-sharing software detected on workstation">
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-alert-app">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-alert-app">⚡ Add Application Rule</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connect Webhook Modal -->
+  <div class="modal" id="alert-webhook-modal">
+    <div class="modal-overlay" id="alert-webhook-overlay"></div>
+    <div class="modal-content glass-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3>🌐 Connect Alert Webhook Destination</h3>
+          <span class="modal-subtitle">Push to Slack, Teams, Discord, or Custom URL</span>
+        </div>
+        <button class="modal-close-btn" id="alert-webhook-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px;">
+        <form id="form-alert-webhook" onsubmit="return false;">
+          <input type="hidden" id="webhook-id">
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Channel Name:</label>
+              <input type="text" id="webhook-name-input" class="input-search" style="width: 100%;" placeholder="e.g. #security-alerts" required>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Platform Type:</label>
+              <select id="webhook-type-select" class="select-dropdown" style="width: 100%;">
+                <option value="slack">Slack Incoming Webhook</option>
+                <option value="teams">Microsoft Teams Webhook</option>
+                <option value="discord">Discord Channel Webhook</option>
+                <option value="custom">Generic JSON Webhook URL</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">Webhook URL:</label>
+            <input type="url" id="webhook-url-input" class="input-search" style="width: 100%; font-family: 'JetBrains Mono'; font-size: 0.8rem;" placeholder="https://hooks.slack.com/services/..." required>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-test-webhook-connection">🧪 Test URL</button>
+            <button type="button" class="btn btn-secondary" id="btn-cancel-alert-webhook">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-alert-webhook">💾 Connect Webhook</button>
           </div>
         </form>
       </div>

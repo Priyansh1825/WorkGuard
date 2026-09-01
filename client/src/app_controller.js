@@ -5,6 +5,11 @@ class AppController {
     this.lastViolations = new Map(); // processName -> timestamp of last violation log
   }
 
+  sanitizeProcessName(name) {
+    if (!name || typeof name !== 'string') return '';
+    return name.replace(/[^a-zA-Z0-9_\-\.]/g, '').trim();
+  }
+
   /**
    * Evaluates active process against policy allowed applications.
    * @param {string} processName e.g. "discord.exe" or "code.exe"
@@ -44,7 +49,8 @@ class AppController {
       if (now - lastLogged > 30000) {
         this.lastViolations.set(normalizedProc, now);
         
-        const details = `Unauthorized App Launched: '${processName}' (Window: '${windowTitle}')`;
+        const safeProc = this.sanitizeProcessName(processName);
+        const details = `Unauthorized App Launched: '${safeProc}' (Window: '${windowTitle}')`;
         console.warn(`[Policy Violation] ${details}`);
 
         if (onViolation) {
@@ -54,11 +60,11 @@ class AppController {
           });
         }
 
-        // If in strict enforcement mode, terminate unauthorized app
-        if (policy.policy_mode === 'strict-block' && process.platform === 'win32') {
-          console.log(`[Enforcement] Strict mode active: Terminating ${processName}`);
-          exec(`taskkill /F /IM "${processName}"`, (err) => {
-            if (err) console.error(`Failed to terminate ${processName}:`, err.message);
+        // If in strict enforcement mode, safely terminate unauthorized app using sanitized process name
+        if (policy.policy_mode === 'strict-block' && process.platform === 'win32' && safeProc) {
+          console.log(`[Enforcement] Strict mode active: Terminating ${safeProc}`);
+          exec(`taskkill /F /IM "${safeProc}"`, { timeout: 4000 }, (err) => {
+            if (err) console.error(`Failed to terminate ${safeProc}:`, err.message);
           });
         }
       }

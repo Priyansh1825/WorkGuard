@@ -42,7 +42,10 @@ class OfflineQueue {
       });
 
       const res = await axios.post(`${config.SERVER_HTTP_URL}/api/screenshots/upload`, form, {
-        headers: form.getHeaders(),
+        headers: {
+          ...form.getHeaders(),
+          'x-agent-auth': config.AUTH_TOKEN
+        },
         timeout: 5000
       });
 

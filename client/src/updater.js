@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const https = require('https');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 const config = require('./config');
 
@@ -69,6 +71,16 @@ class ClientUpdater {
         }
       });
 
+      // 3. Verify SHA-256 Checksum if provided
+      if (msg.sha256) {
+        const fileBuf = fs.readFileSync(downloadPath);
+        const computedHash = crypto.createHash('sha256').update(fileBuf).digest('hex');
+        if (computedHash.toLowerCase() !== msg.sha256.toLowerCase()) {
+          throw new Error(`Checksum mismatch! Expected: ${msg.sha256.substring(0, 8)}..., Received: ${computedHash.substring(0, 8)}...`);
+        }
+        console.log('[OTA Updater] 🔒 SHA-256 checksum verified successfully.');
+      }
+
       console.log('[OTA Updater] ✅ Download complete. Preparing self-extraction script...');
       if (ws && ws.readyState === 1) {
         ws.send(JSON.stringify({
@@ -80,8 +92,9 @@ class ClientUpdater {
         }));
       }
 
-      // 3. Create standalone Windows Batch Update Worker
+      // 4. Create standalone Windows Batch Update Worker
       const batchScriptPath = path.join(this.clientRoot, 'apply_update.bat');
+      const extractedPath = path.join(this.tempDir, 'extracted');
       const batchScript = `@echo off
 echo =======================================================
 echo WorkGuard Client Agent Remote OTA Self-Updater
@@ -90,10 +103,10 @@ timeout /t 2 /nobreak >nul
 
 cd /d "${this.clientRoot}"
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Path '${downloadPath.replace(/\\/g, '\\\\')}' -DestinationPath '${path.join(this.tempDir, 'extracted').replace(/\\/g, '\\\\')}' -Force"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Path '${downloadPath.replace(/\\/g, '\\\\')}' -DestinationPath '${extractedPath.replace(/\\/g, '\\\\')}' -Force"
 
-if exist "${path.join(this.tempDir, 'extracted')}" (
-    xcopy /E /Y /I "${path.join(this.tempDir, 'extracted')}\\*" "${this.clientRoot}\\" >nul 2>&1
+if exist "${extractedPath}" (
+    xcopy /E /Y /I "${extractedPath}\\*" "${this.clientRoot}\\" >nul 2>&1
 )
 
 rmdir /s /q "${this.tempDir}" >nul 2>&1
@@ -148,10 +161,16 @@ exit
   downloadFile(url, dest, onProgress) {
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(dest);
-      http.get(url, (response) => {
+      const client = url.startsWith('https:') ? https : http;
+      const headers = {
+        'User-Agent': 'WorkGuard-Client-Updater/1.2.0',
+        'x-agent-auth': config.AUTH_TOKEN || ''
+      };
+
+      client.get(url, { headers }, (response) => {
         if (response.statusCode !== 200) {
           file.close();
-          fs.unlinkSync(dest);
+          if (fs.existsSync(dest)) fs.unlinkSync(dest);
           return reject(new Error(`Server returned HTTP ${response.statusCode}`));
         }
 
