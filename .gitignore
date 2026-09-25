@@ -3,8 +3,10 @@ node_modules/
 package-lock.json
 
 # Build outputs & deliverables
-dist/
-*.zip
+dist/*
+!dist/WorkGuard-Admin-Station.zip
+!dist/WorkGuard-Client-Agent.zip
+dist/WorkGuard-Inspector*
 
 # Runtime storage, databases, screenshots & buffers
 server/storage/
