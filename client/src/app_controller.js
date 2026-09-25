@@ -60,13 +60,13 @@ class AppController {
           });
         }
 
-        // If in strict enforcement mode, safely terminate unauthorized app using sanitized process name
-        if (policy.policy_mode === 'strict-block' && process.platform === 'win32' && safeProc) {
-          console.log(`[Enforcement] Strict mode active: Terminating ${safeProc}`);
-          exec(`taskkill /F /IM "${safeProc}"`, { timeout: 4000 }, (err) => {
-            if (err) console.error(`Failed to terminate ${safeProc}:`, err.message);
-          });
-        }
+        // Process Enforcement (strict taskkill) disabled temporarily pending future update
+        // if (policy.policy_mode === 'strict-block' && process.platform === 'win32' && safeProc) {
+        //   console.log(`[Enforcement] Strict mode active: Terminating ${safeProc}`);
+        //   exec(`taskkill /F /IM "${safeProc}"`, { timeout: 4000 }, (err) => {
+        //     if (err) console.error(`Failed to terminate ${safeProc}:`, err.message);
+        //   });
+        // }
       }
     }
   }

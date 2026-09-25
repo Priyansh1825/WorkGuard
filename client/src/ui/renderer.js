@@ -183,52 +183,69 @@ function showEmployeeToast(title, msg) {
 // Break Mode Toggle
 function updateBreakUI(onBreak) {
   isOnBreak = onBreak;
-  if (isOnBreak) {
-    breakBtn.classList.add('on-break');
-    breakBtnText.textContent = 'Resume Work';
-    workStateBadgeEl.className = 'badge-break';
-    workStateBadgeEl.textContent = '☕ On Break (Capture Suspended)';
-  } else {
-    breakBtn.classList.remove('on-break');
-    breakBtnText.textContent = 'Take Break (Pause)';
-    workStateBadgeEl.className = 'badge-active';
-    workStateBadgeEl.textContent = '🟢 Working (Monitoring Active)';
+  if (breakBtn && breakBtnText) {
+    if (isOnBreak) {
+      breakBtn.classList.add('on-break');
+      breakBtnText.textContent = 'Resume Work';
+    } else {
+      breakBtn.classList.remove('on-break');
+      breakBtnText.textContent = 'Take Break (Pause)';
+    }
+  }
+  if (workStateBadgeEl) {
+    if (isOnBreak) {
+      workStateBadgeEl.className = 'badge-break';
+      workStateBadgeEl.textContent = '☕ On Break (Capture Suspended)';
+    } else {
+      workStateBadgeEl.className = 'badge-active';
+      workStateBadgeEl.textContent = '🟢 Working (Monitoring Active)';
+    }
   }
 }
 
-breakBtn.addEventListener('click', async () => {
-  try {
-    const newState = !isOnBreak;
-    const res = await fetch('/api/break', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ onBreak: newState })
-    });
-    const result = await res.json();
-    updateBreakUI(result.onBreak);
-  } catch (e) {
-    console.error('Failed to toggle break:', e);
-  }
-});
+if (breakBtn) {
+  breakBtn.addEventListener('click', async () => {
+    try {
+      const newState = !isOnBreak;
+      const res = await fetch('/api/break', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ onBreak: newState })
+      });
+      const result = await res.json();
+      updateBreakUI(result.onBreak);
+    } catch (e) {
+      console.error('Failed to toggle break:', e);
+    }
+  });
+}
 
 // Manual Sync Now
-btnSyncNow.addEventListener('click', async () => {
-  btnSyncNow.textContent = 'Syncing...';
-  try {
-    await fetch('/api/sync-now', { method: 'POST' });
-    setTimeout(() => {
+if (btnSyncNow) {
+  btnSyncNow.addEventListener('click', async () => {
+    btnSyncNow.textContent = 'Syncing...';
+    try {
+      await fetch('/api/sync-now', { method: 'POST' });
+      setTimeout(() => {
+        btnSyncNow.textContent = 'Sync Now';
+        fetchClientStatus();
+      }, 1000);
+    } catch (e) {
       btnSyncNow.textContent = 'Sync Now';
-      fetchClientStatus();
-    }, 1000);
-  } catch (e) {
-    btnSyncNow.textContent = 'Sync Now';
-  }
-});
+    }
+  });
+}
 
 // Rules Modal
-btnOpenRules.addEventListener('click', () => policyModal.classList.add('active'));
-btnCloseRules.addEventListener('click', () => policyModal.classList.remove('active'));
-btnCloseRulesBottom.addEventListener('click', () => policyModal.classList.remove('active'));
+if (btnOpenRules && policyModal) {
+  btnOpenRules.addEventListener('click', () => policyModal.classList.add('active'));
+}
+if (btnCloseRules && policyModal) {
+  btnCloseRules.addEventListener('click', () => policyModal.classList.remove('active'));
+}
+if (btnCloseRulesBottom && policyModal) {
+  btnCloseRulesBottom.addEventListener('click', () => policyModal.classList.remove('active'));
+}
 
 // Initial Fetch & Interval
 checkEmployeeProfile();

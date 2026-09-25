@@ -2,8 +2,8 @@
   "version": "1.4.0",
   "release_notes": "Automated Cloud Release v1.4.0",
   "released_at": "2026-09-25T11:42:21.191Z",
-  "bundle_size": 1072740,
-  "sha256": "242bb3e709c71b3976278ee589eba604caae9dd94a9cb7f54c6ba8c12bb2e48e",
+  "bundle_size": 1075611,
+  "sha256": "cf86a2f88b86603ff31be18de9a3bc6e2e7a79c048407a10129c5457798627d4",
   "source_cloud_url": "http://127.0.0.1:53350/releases/client-v1.4.0.zip",
-  "updated_at": "2026-09-25T11:42:32.662Z"
+  "updated_at": "2026-09-25T15:50:53.101Z"
 }
