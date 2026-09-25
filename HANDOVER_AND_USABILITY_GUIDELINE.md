@@ -1,382 +1,298 @@
-# 🏢 WorkGuard: Complete Project Usability & Handover Guideline
+# 📘 WorkGuard: Complete User Manual & Testing Guide
 
-> **Document Type:** Production Handover Specification, Operations Manual & Usability Guideline  
-> **Target Audience:** System Administrators, IT Operations Leads, Security Officers, Department Managers, Project Owners  
-> **System Version:** WorkGuard v2.4.0 (Enterprise LAN Edition)  
-> **Deployment Model:** 100% Offline Local Area Network (LAN) / Zero Cloud Dependencies  
+> **Document Type:** System Usability Manual & Step-by-Step Testing Guide  
+> **Target Audience:** Project Owners, System Administrators, Managers, and QA Testers  
+> **Software Version:** WorkGuard v2.4.0 (Enterprise LAN Edition)  
+> **Architecture:** 100% Offline Local Area Network (Zero Cloud Dependencies)  
 
 ---
 
 ## 📑 Table of Contents
 
-1. [Executive Summary & System Purpose](#1-executive-summary--system-purpose)
-2. [Software Deliverables & Artifact Inventory](#2-software-deliverables--artifact-inventory)
-3. [System Architecture & Network Topology](#3-system-architecture--network-topology)
-4. [Deployment & Installation Playbook](#4-deployment--installation-playbook)
-   - [4.1 Admin Station Setup (Manager Machine)](#41-admin-station-setup-manager-machine)
-   - [4.2 Client Agent Setup (Employee Workstations)](#42-client-agent-setup-employee-workstations)
-   - [4.3 Network Inspector Setup (Diagnostics Station)](#43-network-inspector-setup-diagnostics-station)
-5. [Operational User Guide (Daily Management)](#5-operational-user-guide-daily-management)
-   - [5.1 Fleet Overview & Real-Time Telemetry](#51-fleet-overview--real-time-telemetry)
-   - [5.2 Live Screen Monitoring (Sub-Second 30 FPS)](#52-live-screen-monitoring-sub-second-30-fps)
-   - [5.3 Screenshot Timeline & Gallery Inspection](#53-screenshot-timeline--gallery-inspection)
-   - [5.4 Policy & Whitelist Enforcement](#54-policy--whitelist-enforcement)
-   - [5.5 Smart Privacy Shield & Sensitive Data Blurring](#55-smart-privacy-shield--sensitive-data-blurring)
-   - [5.6 Security Alert Triggers & Webhook Notifications](#56-security-alert-triggers--webhook-notifications)
-   - [5.7 Database Studio & Record Management](#57-database-studio--record-management)
-   - [5.8 Employee Hub & Break Mode UX](#58-employee-hub--break-mode-ux)
-6. [Security, RBAC & Data Governance](#6-security-rbac--data-governance)
-   - [6.1 Role-Based Access Control (RBAC)](#61-role-based-access-control-rbac)
-   - [6.2 Cryptography & Tamper-Evident Audit Chain](#62-cryptography--tamper-evident-audit-chain)
-   - [6.3 Storage Retention & Automated 20-Day Purge](#63-storage-retention--automated-20-day-purge)
-7. [System Maintenance, Backups & Disaster Recovery](#7-system-maintenance-backups--disaster-recovery)
-   - [7.1 Routine Database & Media Backups](#71-routine-database--media-backups)
-   - [7.2 Stopping & Restarting the Ecosystem](#72-stopping--restarting-the-ecosystem)
-   - [7.3 Packaging & Rebuilding Distributions](#73-packaging--rebuilding-distributions)
-   - [7.4 Remote Over-The-Air (OTA) Client Updates](#74-remote-over-the-air-ota-client-updates)
-8. [Troubleshooting & Diagnostics Playbook](#8-troubleshooting--diagnostics-playbook)
-9. [Official Handover Sign-Off Checklist](#9-official-handover-sign-off-checklist)
+1. [Quick Overview: What Files to Use](#1-quick-overview-what-files-to-use)
+2. [Part 1: Manager User Manual (Admin Station Desktop App)](#part-1-manager-user-manual-admin-station-desktop-app)
+   - [1.1 How to Launch & First-Time Setup](#11-how-to-launch--first-time-setup)
+   - [1.2 Fleet Overview & Real-Time Monitoring](#12-fleet-overview--real-time-monitoring)
+   - [1.3 Live Screen Streaming (30 FPS Sub-Second Latency)](#13-live-screen-streaming-30-fps-sub-second-latency)
+   - [1.4 Screenshot Timeline & Image Gallery](#14-screenshot-timeline--image-gallery)
+   - [1.5 Setting Application & Website Whitelist Policies](#15-setting-application--website-whitelist-policies)
+   - [1.6 Smart Privacy Shield (Auto-Blur Sensitive Windows)](#16-smart-privacy-shield-auto-blur-sensitive-windows)
+   - [1.7 Real-Time Security Alerts & Webhooks](#17-real-time-security-alerts--webhooks)
+   - [1.8 Database Studio & Record Management](#18-database-studio--record-management)
+   - [1.9 Background Running & System Tray](#19-background-running--system-tray)
+3. [Part 2: Employee User Manual (Client Agent & Hub Widget)](#part-2-employee-user-manual-client-agent--hub-widget)
+   - [2.1 How to Install (1-Click Auto-Start on Boot)](#21-how-to-install-1-click-auto-start-on-boot)
+   - [2.2 First-Time Employee Name & Department Setup](#22-first-time-employee-name--department-setup)
+   - [2.3 Using the Employee Hub Widget](#23-using-the-employee-hub-widget)
+   - [2.4 Taking Breaks (Pausing Monitoring for Privacy)](#24-taking-breaks-pausing-monitoring-for-privacy)
+   - [2.5 How to Completely Uninstall](#25-how-to-completely-uninstall)
+4. [Part 3: Complete Testing Guide (How to Test Everything Yourself)](#part-3-complete-testing-guide-how-to-test-everything-yourself)
+   - [Test 1: 1-Click Automated Diagnostic Audit (`run-all-tests.bat`)](#test-1-1-click-automated-diagnostic-audit-run-all-testsbat)
+   - [Test 2: 1-Click Visual Dual-UI Test on 1 PC (`1-Click-Test-Both.bat`)](#test-2-1-click-visual-dual-ui-test-on-1-pc-1-click-test-bothbat)
+   - [Test 3: Live 30 FPS Screen Streaming Test](#test-3-live-30-fps-screen-streaming-test)
+   - [Test 4: GPU Hardware Acceleration Screen Capture Test (No Black Screen)](#test-4-gpu-hardware-acceleration-screen-capture-test-no-black-screen)
+   - [Test 5: Smart Privacy Shield & Auto-Blur Test](#test-5-smart-privacy-shield--auto-blur-test)
+   - [Test 6: Offline Disk Buffering Test (Network Resilience)](#test-6-offline-disk-buffering-test-network-resilience)
+   - [Test 7: Real-World Multi-PC LAN Test (Across 2 Separate Computers)](#test-7-real-world-multi-pc-lan-test-across-2-separate-computers)
+5. [Part 4: Troubleshooting & Quick Fixes](#part-4-troubleshooting--quick-fixes)
 
 ---
 
-## 1. Executive Summary & System Purpose
+## 1. Quick Overview: What Files to Use
 
-**WorkGuard** is an enterprise-grade, offline-first employee productivity monitoring and endpoint fleet management suite designed for office Local Area Networks (LAN). It operates with **zero external cloud dependencies**, ensuring that all company telemetry, screenshots, live screen feeds, and audit logs remain strictly within your physical network infrastructure.
-
-### Core Capabilities Matrix
-
-| Capability | Technical Mechanism | Business Value |
-| :--- | :--- | :--- |
-| **Zero-Config LAN Auto-Discovery** | UDP Broadcast Beacon ([`DiscoveryBeacon`](file:///d:/employee_monitor/server/src/discovery_beacon.js#L1-L60) on port `38281`) | Clients auto-detect manager's dynamic IP address; zero manual IP entry required. |
-| **GPU Acceleration Screen Capture Bypass** | Native Win32 GDI+ C# capture ([`ScreenGrab.cs`](file:///d:/employee_monitor/client/src/ScreenGrab.cs#L1-L120) via `SRCCOPY \| CAPTUREBLT`) | Completely eliminates black-screen captures on Chrome, Edge, VS Code, Discord, Zoom. |
-| **On-Demand Live Screen Streaming** | Binary JPEG stream over WebSocket ([`LiveStreamer`](file:///d:/employee_monitor/client/src/live_streamer.js#L1-L50)) at 15–30 FPS | Sub-second latency desktop observation only when administrator views the workstation. |
-| **Resilient Offline Buffering** | Local disk FIFO queue ([`OfflineQueue`](file:///d:/employee_monitor/client/src/offline_queue.js#L1-L100) in `storage_buffer/`) | Screenshots continue recording during network outages and auto-sync upon reconnection. |
-| **Smart Privacy Shield** | Window title & keyword filter engine ([`PrivacyManager`](file:///d:/employee_monitor/server/src/privacy_manager.js#L1-L100)) | Obfuscates or suspends capture on password vaults, banking portals, and medical windows. |
-| **Multi-Admin RBAC & Audit Chain** | SQLite WAL mode ([`Database`](file:///d:/employee_monitor/server/src/db.js#L50-L150)) + HMAC-SHA256 blockchain | Segregated manager roles (SuperAdmin, Dept Manager, Auditor) with tamper-evident audit logs. |
-| **Real-Time Webhook Alerting** | Webhook Dispatcher ([`AlertManager`](file:///d:/employee_monitor/server/src/alert_manager.js#L1-L100)) | Instant alerts sent to Slack, Microsoft Teams, Discord on unauthorized software execution. |
-
----
-
-## 2. Software Deliverables & Artifact Inventory
-
-The WorkGuard suite is organized into three production packages located in the [`dist/`](file:///d:/employee_monitor/dist) directory:
+The production software packages are located in the [`dist/`](file:///d:/employee_monitor/dist) folder:
 
 ```
 d:\employee_monitor\dist\
-├── WorkGuard-Admin-Station.zip        <-- Distribution ZIP for Manager / Admin PC
-│   └── WorkGuard-Admin-Station\
-│       ├── WorkGuard-Admin.exe        <-- Native Electron Admin Desktop Application
-│       ├── Start-Admin-Station.bat    <-- 1-Click Batch Launcher
-│       ├── admin\                     <-- Admin UI & Electron runtime container
-│       └── server\                    <-- Embedded Express REST & WebSocket server
+├── WorkGuard-Admin-Station.zip        <-- Extract this on the MANAGER / SUPERVISOR PC
+│   └── WorkGuard-Admin.exe            <-- Double-click to launch the Admin Station
 │
-├── WorkGuard-Client-Agent.zip         <-- Distribution ZIP for Employee Workstations
-│   └── WorkGuard-Client-Agent\
-│       ├── Install-WorkGuard.exe      <-- 1-Click Silent Autostart Installer
-│       ├── Install-WorkGuard-Agent.bat<-- Batch Installer fallback
-│       ├── Employee-Hub.exe           <-- Employee Workstation Status Hub & Break UI
-│       ├── WorkGuard-Client.exe       <-- Native Background Agent Daemon
-│       ├── Uninstall-WorkGuard-Agent.bat <-- Clean uninstallation utility
-│       ├── bin\screengrab.exe         <-- Compiled Win32 GDI+ GPU-bypass capture engine
-│       └── storage_buffer\            <-- Local offline screenshot cache folder
-│
-└── WorkGuard-Inspector.zip            <-- Distribution ZIP for Network Diagnostics
-    └── WorkGuard-Inspector\
-        ├── WorkGuard-Inspector.exe    <-- Standalone Diagnostic GUI Tool
-        ├── inspect-network.bat        <-- Network diagnostic script
-        └── index.html & renderer.js   <-- Diagnostic dashboard
+└── WorkGuard-Client-Agent.zip         <-- Extract this on EMPLOYEE WORKSTATION PCs
+    ├── Install-WorkGuard.exe          <-- Double-click to install (runs silently in background)
+    └── Employee-Hub.exe               <-- Double-click to open Employee status & break widget
 ```
 
-### Source Code Repository Structure
+---
 
-* [`admin/`](file:///d:/employee_monitor/admin): Electron desktop wrapper, native window management, system tray controller ([`main.js`](file:///d:/employee_monitor/admin/main.js)).
-* [`client/`](file:///d:/employee_monitor/client): Endpoint background daemon, capture engine, offline buffer, auto-discovery receiver, Employee Hub UI.
-* [`server/`](file:///d:/employee_monitor/server): Express REST API ([`api.js`](file:///d:/employee_monitor/server/src/routes/api.js)), WebSocket streaming relay ([`websocket.js`](file:///d:/employee_monitor/server/src/websocket.js)), SQLite database ([`db.js`](file:///d:/employee_monitor/server/src/db.js)), Privacy Shield ([`privacy_manager.js`](file:///d:/employee_monitor/server/src/privacy_manager.js)), and Alert Dispatcher ([`alert_manager.js`](file:///d:/employee_monitor/server/src/alert_manager.js)).
-* [`inspector/`](file:///d:/employee_monitor/inspector): Multi-point health scanner for Port 3000 (HTTP/WS), Port 38281 (UDP Discovery), and Port 38282 (Hub UI).
-* [`tools/`](file:///d:/employee_monitor/tools): Automated test suites for security, enterprise features, database integrity, and remote updates.
+# Part 1: Manager User Manual (Admin Station Desktop App)
+
+The **WorkGuard Admin Station** is a native Windows desktop application for managing all employee workstations over your office Local Area Network (LAN).
+
+### 1.1 How to Launch & First-Time Setup
+1. Extract [`dist/WorkGuard-Admin-Station.zip`](file:///d:/employee_monitor/dist/WorkGuard-Admin-Station.zip) to any folder (e.g. `C:\WorkGuard-Admin-Station\`).
+2. Double-click **`WorkGuard-Admin.exe`** (or [`Start-Admin-Station.bat`](file:///d:/employee_monitor/dist/WorkGuard-Admin-Station/Start-Admin-Station.bat)).
+3. **First-Time Master Password**:
+   - On the first launch, set your **Administrator Master Password** (minimum 6 characters).
+   - Once saved, your SQLite database and cryptographic session secrets are initialized.
+4. The dashboard automatically starts the server on Port `3000` and broadcasts a UDP beacon on Port `38281`.
 
 ---
 
-## 3. System Architecture & Network Topology
-
-```
-                                  OFFICE LOCAL AREA NETWORK (LAN)
-        +---------------------------------------------------------------------------------+
-        |                                                                                 |
-        v                                                                                 v
-+------------------------------------+                            +------------------------------------+
-|     WORKGUARD ADMIN STATION        |                            |       CLIENT AGENT ENDPOINT        |
-|     (Manager / Supervisor PC)      |                            |     (Employee Workstation PC)      |
-+------------------------------------+                            +------------------------------------+
-| 🖥️ Electron Desktop GUI            |    UDP Broadcast Beacon    | ⚙️ Silent Background Daemon         |
-| 🌐 Embedded Express REST API       | ◄========================► | 🔍 UDP Auto-Discovery Receiver     |
-| 🔌 WebSocket Streaming Relay Hub   |          Port 38281        | 👤 1st-Time Setup (Name & Dept)    |
-| 👥 Multi-Admin RBAC & User Mgmt    |                            | 🔒 Locked Profile Enforcer         |
-| 💾 SQLite WAL Database & Storage   |                            | 📸 Win32 GDI+ Screen Grabber (.exe)|
-| 🧹 Auto-Retention Purge Engine     |      HTTP / WS Relay       | 💾 Resilient Offline Disk Buffer   |
-| 🚨 Alert Webhooks (Slack/Teams)    | ◄────────────────────────► | ⏱️ Employee Hub Status UI (Widget) |
-| 🛡️ Smart Privacy Shield Engine     |          Port 3000         | 🛡️ App & Web Policy Enforcer       |
-| 📥 Windows System Tray Daemon      |                            | ☕ Break Mode Suspend Controller   |
-+------------------------------------+                            +------------------------------------+
-                  ▲                                                                 ▲
-                  │                                                                 │
-                  └───────────────────────────────┐                                 │
-                                                  ▼                                 │
-                                   +------------------------------------+           │
-                                   |    WORKGUARD NETWORK INSPECTOR     |           │
-                                   |      (System Diagnostics Tool)     |           │
-                                   +------------------------------------+           │
-                                   | 🩺 Multi-Point Health Scanner      |           │
-                                   | 📊 Port 3000 / 38281 / 38282 Probe | ──────────┘
-                                   | 🔍 Automated Issue & Fix Resolver  |
-                                   +------------------------------------+
-```
-
-### Communication Ports & Protocols
-
-| Port | Protocol | Purpose | Direction |
-| :--- | :--- | :--- | :--- |
-| **`3000`** | TCP (HTTP & WebSocket) | Admin REST API, live stream relay, screenshot uploads, policy push | Client $\rightarrow$ Admin Station |
-| **`38281`** | UDP Broadcast | Zero-configuration auto-discovery beacon | Admin Station $\rightarrow$ LAN Broadcast |
-| **`38282`** | TCP (HTTP) | Local Employee Hub UI & break management widget | Localhost on Client Workstation |
+### 1.2 Fleet Overview & Real-Time Monitoring
+Navigate to the **"👥 Fleet Overview"** tab:
+* **Live Workstation Cards**: Displays every connected computer with:
+  - **Employee Name & Assigned Department**
+  - **Online/Offline Status Indicator**
+  - **Current Active Application** (e.g. `code.exe`, `excel.exe`)
+  - **Current Foreground Window Title**
+  - **Live CPU & RAM Telemetry**
+* **Department Filter**: Use the dropdown at the top to filter machines by department (*Engineering*, *Sales*, *Marketing*, *HR*).
+* **Remote Profile Editing**: Click **"✏️ Edit Profile"** on any card to change an employee's name or department. The changes synchronize to the employee's PC immediately.
 
 ---
 
-## 4. Deployment & Installation Playbook
-
-### 4.1 Admin Station Setup (Manager Machine)
-
-1. **System Requirements**:
-   - Windows 10, Windows 11 (64-bit), or Windows Server 2016+.
-   - 4 GB RAM minimum, 20 GB free disk space for screenshot storage.
-   - Connected to the office local network (Wi-Fi or Ethernet).
-2. **Installation Steps**:
-   - Copy [`dist/WorkGuard-Admin-Station.zip`](file:///d:/employee_monitor/dist/WorkGuard-Admin-Station.zip) to the manager's computer and extract it (e.g., to `C:\WorkGuard-Admin-Station\`).
-   - Double-click **`WorkGuard-Admin.exe`** (or [`Start-Admin-Station.bat`](file:///d:/employee_monitor/dist/WorkGuard-Admin-Station/Start-Admin-Station.bat)).
-   - **First Launch Master Password Setup**:
-     - On initial launch, set a secure Master Administrator Password (minimum 6 characters).
-     - The system immediately initializes the SQLite WAL database and configures cryptographic session secrets.
-3. **Windows Firewall Rule (If Prompted)**:
-   - Allow `WorkGuard-Admin.exe` / Node.js through Private Networks for TCP Port `3000` and UDP Port `38281`.
-4. **Background System Tray Execution**:
-   - Closing the Admin window with the `(X)` button **does not stop monitoring**; it minimizes to the Windows System Tray (near the clock).
-   - Double-click the tray icon to restore the window.
-   - Right-click the tray icon and select **"❌ Exit WorkGuard Admin"** to terminate.
+### 1.3 Live Screen Streaming (30 FPS Sub-Second Latency)
+Navigate to the **"🔴 Live Monitor"** tab:
+1. Select any online employee from the dropdown list or click **"Live Watch"** on their fleet card.
+2. The employee's screen will stream live at **15–30 FPS** with sub-second latency.
+3. Click **"Full Screen"** to inspect fine code text, spreadsheets, or designs.
+4. *Bandwidth Saving*: When you leave the Live Monitor tab, streaming automatically stops to save network bandwidth and CPU.
 
 ---
 
-### 4.2 Client Agent Setup (Employee Workstations)
-
-1. **System Requirements**:
-   - Windows 10 or Windows 11 (64-bit).
-   - Standard user or Administrator account.
-2. **Installation Steps (1-Click Automated Setup)**:
-   - Copy [`dist/WorkGuard-Client-Agent.zip`](file:///d:/employee_monitor/dist/WorkGuard-Client-Agent.zip) to the employee computer and extract it (e.g., to `C:\Program Files\WorkGuard\` or `C:\WorkGuard-Client\`).
-   - Right-click **`Install-WorkGuard.exe`** (or [`Install-WorkGuard-Agent.bat`](file:///d:/employee_monitor/dist/WorkGuard-Client-Agent/Install-WorkGuard-Agent.bat)) and select **Run as Administrator** (or run standard).
-   - The installer creates the Windows Autostart registry key (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run\WorkGuardAgent`) and starts the agent silently in the background.
-3. **First-Time Employee Profile Setup**:
-   - The **Employee Hub** window will prompt the employee for their **Full Name** (e.g., *Jane Doe*) and **Department** (e.g., *Engineering*).
-   - Once submitted, the profile is **cryptographically locked** on the employee machine to prevent unauthorized alterations.
-   - Only managers can update employee details remotely from the Admin Dashboard.
-4. **Uninstallation Procedure**:
-   - To remove the agent, run [`Uninstall-WorkGuard-Agent.bat`](file:///d:/employee_monitor/dist/WorkGuard-Client-Agent/Uninstall-WorkGuard-Agent.bat). It stops all running processes and unregisters the startup key.
+### 1.4 Screenshot Timeline & Image Gallery
+Navigate to the **"📸 Timeline"** tab:
+* **Automated Silent Captures**: WorkGuard captures screenshots periodically (e.g., every 15s or 10 min, configurable in policy).
+* **Filter by Workstation, Date, or Application**: Search specifically for screenshots where an employee was using `chrome.exe`, `excel.exe`, etc.
+* **Full-Resolution Zoom Lightbox**: Click any thumbnail to view in full resolution or click **"Download"** to save to disk.
 
 ---
 
-### 4.3 Network Inspector Setup (Diagnostics Station)
-
-When setting up new workstations or diagnosing network connectivity:
-- Run **`WorkGuard-Inspector.exe`** (or [`inspect-system.bat`](file:///d:/employee_monitor/inspect-system.bat)) on any machine.
-- The tool performs a multi-point scan across Ports `3000`, `38281`, and `38282`, displaying ping latency, discovered server IP, connected clients count, and firewall status.
-
----
-
-## 5. Operational User Guide (Daily Management)
-
-```
-+-----------------------------------------------------------------------------------+
-|  WorkGuard Enterprise Admin Dashboard                                            |
-|  [👥 Fleet Overview]  [🔴 Live Monitor]  [📸 Timeline]  [🛡️ Policies]  [🗄️ Studio]  |
-+-----------------------------------------------------------------------------------+
-```
-
-### 5.1 Fleet Overview & Real-Time Telemetry
-- **Live Workstation Cards**: View real-time status (Online/Offline), Employee Name, Department, IP, Hostname, Current Active Application, Active Window Title, and CPU/RAM usage.
-- **Department Filtering**: Filter workstation cards by department (*Engineering*, *Sales*, *Marketing*, *HR*, *Finance*).
-- **Remote Profile Editing**: Click **"✏️ Edit Profile"** on any workstation card to change an employee's assigned name or department. Changes sync over WebSockets instantly.
-
-### 5.2 Live Screen Monitoring (Sub-Second 30 FPS)
-- Navigate to the **"🔴 Live Monitor"** tab.
-- Select any online workstation from the dropdown or click "Live Watch" on their fleet card.
-- Streams live display frames at 15–30 FPS over binary WebSockets.
-- Supports **Full-Screen Zoom Mode** to inspect fine text or technical workflows.
-- *Bandwidth Conservation*: Live streaming stops immediately when the tab is closed.
-
-### 5.3 Screenshot Timeline & Gallery Inspection
-- Navigate to the **"📸 Timeline"** tab.
-- Filter historical captures by **Date**, **Workstation Name**, or **Application Name** (e.g., `chrome.exe`, `code.exe`).
-- Click any image thumbnail to open the high-resolution lightbox viewer or download the original uncompressed capture.
-
-### 5.4 Policy & Whitelist Enforcement
-- Navigate to the **"🛡️ Policies & Rules"** tab.
-- **Application Whitelist**: Define approved programs (e.g., `code.exe`, `excel.exe`, `teams.exe`, `slack.exe`).
-- **Website Whitelist**: Specify approved domain names (e.g., `github.com`, `jira.com`, `google.com`).
-- **Work Hours & Active Days**: Set business hours (e.g., `09:00` to `18:00`, Mon–Fri). Monitoring automatically pauses outside official hours.
-- **Policy Enforcement Mode**:
-  - `Audit & Alert`: Silently records violations in the audit log and dispatches admin alerts.
-  - `Strict Block`: Immediately terminates prohibited software via `taskkill`.
-- Click **"Save & Deploy to All Agents"** to push updates across the entire LAN in real time.
-
-### 5.5 Smart Privacy Shield & Sensitive Data Blurring
-WorkGuard includes a sensitive content detection engine configured in the **Privacy Shield** settings:
-- **Protected Applications**: Password managers (`1password.exe`, `bitwarden.exe`, `keepass.exe`, `lastpass.exe`).
-- **Sensitive Window Keywords**: `*bank*`, `*paypal*`, `*payroll*`, `*medical*`, `*credit card*`.
-- **Protection Actions**:
-  - `blur_screenshot`: Generates a high-speed obfuscated privacy mask over the image.
-  - `pause_capture`: Completely suppresses capture while the sensitive window is in the foreground.
-  - `mask_title`: Replaces sensitive window titles in logs with `[Protected Window - Privacy Shield Active]`.
-
-### 5.6 Security Alert Triggers & Webhook Notifications
-- Configure real-time webhook endpoints for **Slack**, **Microsoft Teams**, **Discord**, or custom HTTP endpoints.
-- Define custom application triggers with severities:
-  - `critical` (e.g., `utorrent.exe`, `cheatengine.exe` -> 1-minute alert cooldown).
-  - `warning` (e.g., `poker.exe`, `wireshark.exe` -> 5-minute alert cooldown).
-- Dispatches rich card notifications with workstation name, employee, department, and active window.
-
-### 5.7 Database Studio & Record Management
-- Navigate to the **"🗄️ Database Studio"** tab.
-- Direct administrative inspection of SQLite tables: `clients`, `screenshots`, `policies`, `audit_logs`, `security_settings`, `admin_users`, `alert_webhooks`, `alert_app_rules`, `privacy_rules`.
-- Perform live table search, pagination, record insertion, record editing, and single-click **Full JSON Export**.
-- Run **VACUUM** to optimize disk space and verify cryptographic audit log chain integrity.
-
-### 5.8 Employee Hub & Break Mode UX
-- Employees can open their status hub anytime via **`Employee-Hub.exe`** (runs on port `38282`).
-- **Active Shift Timer**: Tracks productive daily working time.
-- **"☕ Take Break" Button**: Employees can pause monitoring during lunch or personal time. While on break, screen capture and policy tracking are suspended, and the Admin dashboard displays *"On Break"*.
-- **"Resume Work" Button**: Restores standard operational monitoring.
-- **View Company Policy**: Allows employees to check approved applications and domains transparently.
+### 1.5 Setting Application & Website Whitelist Policies
+Navigate to the **"🛡️ Policies & Rules"** tab:
+* **Allowed Applications**: Add approved executable filenames (e.g. `code.exe`, `excel.exe`, `slack.exe`, `teams.exe`).
+* **Allowed Websites**: Add approved domain names (e.g. `github.com`, `google.com`, `jira.com`).
+* **Work Hours**: Set office hours (e.g. `09:00` to `18:00`, Monday–Friday). Monitoring automatically suspends outside of these hours.
+* **Policy Enforcement Mode**:
+  - `Audit & Alert`: Logs unlisted applications without disturbing the employee.
+  - `Strict Block`: Automatically terminates prohibited software immediately using `taskkill`.
+* Click **"Save & Deploy to All Agents"** to push updates across the entire LAN instantly.
 
 ---
 
-## 6. Security, RBAC & Data Governance
+### 1.6 Smart Privacy Shield (Auto-Blur Sensitive Windows)
+WorkGuard automatically detects sensitive windows to protect privacy and comply with privacy regulations:
+* **Protected Password Vaults**: `1password.exe`, `bitwarden.exe`, `keepass.exe`, `lastpass.exe`.
+* **Sensitive Keywords**: `*bank*`, `*paypal*`, `*payroll*`, `*medical*`, `*credit card*`.
+* **Actions**:
+  - `blur_screenshot`: Replaces the screenshot with a privacy redaction mask.
+  - `pause_capture`: Drops screenshot capture while sensitive windows are open.
+  - `mask_title`: Replaces window title with `[Protected Window - Privacy Shield Active]`.
 
-### 6.1 Role-Based Access Control (RBAC)
+---
 
-The system supports multi-admin accounts with segregated privilege tiers:
+### 1.7 Real-Time Security Alerts & Webhooks
+* Configure webhooks for **Slack**, **Microsoft Teams**, or **Discord**.
+* Add custom application trigger rules (e.g., alert immediately if `utorrent.exe` or `cheatengine.exe` is launched).
+* Instant notification cards will be sent to your team's Slack/Teams channel.
 
-| Role | Permissions & Scope | Typical Assignment |
+---
+
+### 1.8 Database Studio & Record Management
+Navigate to the **"🗄️ Database Studio"** tab:
+* Inspect all SQLite tables directly: `clients`, `screenshots`, `policies`, `audit_logs`, `security_settings`.
+* Search, paginate, edit, or delete records.
+* Click **"📥 Export Full JSON"** to download an instant consolidated database backup.
+* Click **"🧹 Clean Now"** to purge expired screenshots according to your retention policy (default: 20 days).
+
+---
+
+### 1.9 Background Running & System Tray
+* Clicking the **`[X]` close button** on the Admin window **minimizes it to the Windows System Tray** (bottom-right by the clock) so monitoring never stops.
+* **Restore Window**: Double-click the System Tray icon.
+* **Exit Completely**: Right-click the System Tray icon $\rightarrow$ Click **"❌ Exit WorkGuard Admin"**.
+
+---
+
+# Part 2: Employee User Manual (Client Agent & Hub Widget)
+
+The **Client Agent** runs invisibly in the background on employee computers.
+
+### 2.1 How to Install (1-Click Auto-Start on Boot)
+1. Extract [`dist/WorkGuard-Client-Agent.zip`](file:///d:/employee_monitor/dist/WorkGuard-Client-Agent.zip) on the employee's computer (e.g., to `C:\WorkGuard-Client\`).
+2. Double-click **`Install-WorkGuard.exe`** (or [`Install-WorkGuard-Agent.bat`](file:///d:/employee_monitor/dist/WorkGuard-Client-Agent/Install-WorkGuard-Agent.bat)).
+3. **Zero Configuration Needed**: The agent installs to Windows startup (`Run` registry key), boots silently in the background, and automatically finds the manager's Admin station over the office Wi-Fi/LAN!
+
+---
+
+### 2.2 First-Time Employee Name & Department Setup
+1. The **Employee Hub** window will open and prompt for:
+   - **Full Name** (e.g. *John Smith*)
+   - **Department** (e.g. *Engineering*)
+2. Once saved, the profile is **permanently locked** on the employee machine to prevent tampering.
+3. Only managers can edit an employee's details remotely from the Admin Dashboard.
+
+---
+
+### 2.3 Using the Employee Hub Widget
+Employees can open their status hub anytime by double-clicking **`Employee-Hub.exe`**:
+* **Active Shift Timer**: Displays daily productive work hours.
+* **Sync Status**: Shows **"🟢 Synchronized"** when connected to the manager's station.
+* **View Company Policy**: Allows employees to check approved software and websites transparently.
+
+---
+
+### 2.4 Taking Breaks (Pausing Monitoring for Privacy)
+When an employee steps away for lunch, tea, or personal time:
+1. Open **`Employee-Hub.exe`**.
+2. Click **"☕ Take Break"**.
+3. **What happens**:
+   - Screen capture and policy monitoring are **immediately paused**.
+   - The Admin dashboard shows status as *"On Break"*.
+4. When returning to work, click **"Resume Work"** to reactivate monitoring.
+
+---
+
+### 2.5 How to Completely Uninstall
+To remove the WorkGuard Client Agent from an employee machine:
+1. Open the `WorkGuard-Client-Agent` folder.
+2. Double-click **`Uninstall-WorkGuard-Agent.bat`**.
+3. All background daemon processes are terminated and the autostart registry key is removed cleanly.
+
+---
+
+# Part 3: Complete Testing Guide (How to Test Everything Yourself)
+
+Follow these hands-on test procedures to verify the entire system.
+
+---
+
+### Test 1: 1-Click Automated Diagnostic Audit (`run-all-tests.bat`)
+> **Goal:** Run an automated health audit of all 5 system layers in an isolated sandbox.
+
+1. In the project root directory, double-click **[`run-all-tests.bat`](file:///d:/employee_monitor/run-all-tests.bat)**.
+2. A console window will open and execute:
+   - **[1/5] SQLite Database Engine & Studio Tests**
+   - **[2/5] Security, PBKDF2 & AES-256 Storage Encryption Tests**
+   - **[3/5] Enterprise RBAC, Webhooks & Privacy Shield Tests**
+   - **[4/5] OTA Remote Updates Engine Tests**
+   - **[5/5] Full End-to-End System Integration Tests**
+3. **Expected Output**:
+   ```
+   ===============================================================================
+     ALL TEST SUITES PASSED! 100 PERCENT SYSTEM HEALTH CERTIFIED (0 FAILURES)
+   ===============================================================================
+   ```
+
+---
+
+### Test 2: 1-Click Visual Dual-UI Test on 1 PC (`1-Click-Test-Both.bat`)
+> **Goal:** Test both the Manager Admin Station and Employee Hub simultaneously on a single computer.
+
+1. Double-click **[`1-Click-Test-Both.bat`](file:///d:/employee_monitor/1-Click-Test-Both.bat)** (or [`WorkGuard-1Click-Test.exe`](file:///d:/employee_monitor/WorkGuard-1Click-Test.exe)).
+2. **What Opens**:
+   - The **Admin Desktop App Window** opens on the left.
+   - The **Employee Hub Widget** opens on the right.
+3. **Verification Steps**:
+   - Look at the Admin **Fleet Overview**: Your machine appears as an active workstation card with CPU/RAM and current window title.
+   - On the Employee Hub, click **"☕ Take Break"** $\rightarrow$ Verify the Admin card immediately displays *"On Break"*.
+   - On the Employee Hub, click **"Resume Work"** $\rightarrow$ Verify the Admin card switches back to active monitoring.
+
+---
+
+### Test 3: Live 30 FPS Screen Streaming Test
+> **Goal:** Verify sub-second real-time screen streaming.
+
+1. With the Admin Station open, click the **"🔴 Live Monitor"** tab.
+2. Select your workstation from the dropdown or click **"Live Watch"**.
+3. Move your mouse or open a browser window.
+4. **Expected Result**: The screen in the Live Monitor tab reflects your desktop actions in real time with sub-second latency and 30 FPS smoothness.
+5. Click **"Full Screen"** to inspect resolution clarity.
+
+---
+
+### Test 4: GPU Hardware Acceleration Screen Capture Test (No Black Screen)
+> **Goal:** Verify that screen capture bypasses GPU acceleration on Chrome, Discord, and VS Code.
+
+1. Open **Google Chrome**, **Microsoft Edge**, **Discord**, or **VS Code** with GPU hardware acceleration enabled.
+2. Play a video or open a complex webpage.
+3. In the Admin Station, navigate to **"📸 Timeline"** or view the **Live Monitor**.
+4. **Expected Result**: The Chrome/Discord window is captured with 100% full visual fidelity — **no black boxes or blank areas**.
+
+---
+
+### Test 5: Smart Privacy Shield & Auto-Blur Test
+> **Goal:** Verify that password managers and banking sites are automatically protected.
+
+1. Open Notepad or a browser tab with a title containing `"Password"` or `"Bank"` (or open a password manager like `1Password` / `Bitwarden`).
+2. Trigger a screenshot capture.
+3. In the Admin Station **"📸 Timeline"**, check the captured image.
+4. **Expected Result**: The image displays an obfuscated privacy mask banner, and the window title is masked in logs.
+
+---
+
+### Test 6: Offline Disk Buffering Test (Network Resilience)
+> **Goal:** Verify that employee PCs store screenshots locally when the manager's PC is turned off.
+
+1. Close the Admin Station completely (right-click tray icon $\rightarrow$ Exit).
+2. Keep the employee client agent running on the workstation.
+3. Open [`client/storage_buffer/`](file:///d:/employee_monitor/client/storage_buffer/) $\rightarrow$ Observe screenshot files being buffered locally on disk.
+4. Restart the Admin Station (`WorkGuard-Admin.exe`).
+5. **Expected Result**: The client automatically flushes and uploads all cached screenshots to the Admin station, and the local buffer empties automatically.
+
+---
+
+### Test 7: Real-World Multi-PC LAN Test (Across 2 Separate Computers)
+> **Goal:** Verify zero-configuration automatic discovery across the office network.
+
+1. **On PC 1 (Manager PC)**:
+   - Extract `WorkGuard-Admin-Station.zip` and double-click `WorkGuard-Admin.exe`.
+2. **On PC 2 (Employee PC)**:
+   - Extract `WorkGuard-Client-Agent.zip` and double-click `Install-WorkGuard.exe`.
+   - Enter Employee Name (e.g. *Alice Cooper*) and Department (*Engineering*).
+3. **Verify Connection**:
+   - On PC 1 (Admin Station), Alice's workstation card appears automatically in **Fleet Overview** within 1–2 seconds without typing any IP addresses!
+
+---
+
+# Part 4: Troubleshooting & Quick Fixes
+
+| Issue | Root Cause | Solution |
 | :--- | :--- | :--- |
-| **`superadmin`** | Full root control: Manage Admin accounts, security keys, retention settings, database studio, and all departments. | IT Director, Chief Security Officer |
-| **`dept_manager`** | Scoped access: View fleet, live screens, and screenshots **only** for their assigned departments (e.g., *Engineering*). | Department Heads, Team Leads |
-| **`auditor`** | Read-only compliance access: View audit logs, tamper hash chain, and historical reports; no live viewing or policy modification. | Compliance Officer, HR Auditor |
-| **`viewer`** | Read-only observation: View live fleet and online status cards only. | Shift Supervisor |
-
-### 6.2 Cryptography & Tamper-Evident Audit Chain
-- **Master Password Storage**: PBKDF2 with SHA-512 and 100,000 hashing iterations ([`security_auth.js`](file:///d:/employee_monitor/server/src/security_auth.js#L20-L45)).
-- **Session Tokens**: Cryptographically signed HMAC-SHA256 tokens with configurable expiry.
-- **Pre-Shared Agent Key**: Constant-time timing-safe verification for all workstation communications.
-- **Audit Log Blockchain**: Each audit log entry contains `prev_hash` and `hash` (`HMAC-SHA256(id + timestamp + event + prev_hash)`). If a malicious user alters database records directly, the system flags the broken link immediately.
-- **Storage Encryption at Rest (Optional)**: AES-256-GCM encryption with authenticated magic header tags.
-
-### 6.3 Storage Retention & Automated 20-Day Purge
-- **Automatic Purge Cycle**: The background retention cleaner runs on server boot and every **6 hours**.
-- **Default Retention**: **20 Days** (configurable to 15, 30, 60 days, or unlimited).
-- Screenshots older than the retention threshold are permanently unlinked and deleted from physical disk storage.
-- Click **"🧹 Clean Now"** in the Admin dashboard for instant disk space reclamation.
+| **Client shows "Offline" / Cannot find Admin PC** | Windows Firewall blocking UDP Port `38281` or TCP Port `3000`. | On Admin PC, open Windows Defender Firewall $\rightarrow$ Allow inbound traffic on TCP `3000` and UDP `38281`. Alternatively, type Admin IP into `client/config.json`. |
+| **Port 3000 or 38282 is already in use** | A previous instance is still running in the background. | Double-click [`stop-all-workguard.bat`](file:///d:/employee_monitor/stop-all-workguard.bat) to forcefully kill all lingering processes and release the ports. |
+| **Screenshots not purging after 20 days** | Server has not run its 6-hour cycle. | In Admin Station, go to **"🛡️ Policies & Rules"** or **"🗄️ Database Studio"** and click **"🧹 Clean Now"** for immediate cleanup. |
+| **Forgot Admin Master Password** | Password hash locked in SQLite database. | Stop Admin Station $\rightarrow$ Open `server/storage/workguard.db` in SQLite $\rightarrow$ Run `DELETE FROM security_settings WHERE key LIKE 'admin_password%';` $\rightarrow$ Restart app to set a new password. |
 
 ---
-
-## 7. System Maintenance, Backups & Disaster Recovery
-
-### 7.1 Routine Database & Media Backups
-To create a complete backup of all system configuration, logs, and screenshots:
-1. Stop the Admin Station or ensure no heavy writes are occurring.
-2. Backup the following directories/files:
-   - **Database**: [`server/storage/workguard.db`](file:///d:/employee_monitor/server/storage/workguard.db) (and `workguard.db-wal` / `workguard.db-shm` if present).
-   - **Screenshots**: `server/storage/screenshots/`
-   - **Legacy Config**: [`server/storage/database.json`](file:///d:/employee_monitor/server/storage/database.json)
-3. **Automated Export**: In the **Database Studio** tab, click **"📥 Export Full JSON"** to download an instant consolidated snapshot.
-
-### 7.2 Stopping & Restarting the Ecosystem
-- To safely terminate all WorkGuard processes across Admin, Client, and Inspector instances on a machine:
-  - Run [`stop-all-workguard.bat`](file:///d:/employee_monitor/stop-all-workguard.bat).
-  - This kills native processes (`WorkGuard-Admin.exe`, `WorkGuard-Client.exe`, `Employee-Hub.exe`, `screengrab.exe`) and releases Ports `3000` and `38282`.
-- To start both Admin and Client on a single test workstation:
-  - Run [`1-Click-Test-Both.bat`](file:///d:/employee_monitor/1-Click-Test-Both.bat) or [`start-both-ui.bat`](file:///d:/employee_monitor/start-both-ui.bat).
-
-### 7.3 Packaging & Rebuilding Distributions
-To rebuild fresh distribution ZIPs and executables from source:
-- Execute [`package-all.bat`](file:///d:/employee_monitor/package-all.bat) from the project root.
-- It sequentially triggers [`package-admin.bat`](file:///d:/employee_monitor/package-admin.bat), [`package-client.bat`](file:///d:/employee_monitor/package-client.bat), and [`package-inspector.bat`](file:///d:/employee_monitor/package-inspector.bat), compiling C# native launchers and generating clean standalone folders and ZIP archives in [`dist/`](file:///d:/employee_monitor/dist).
-
-### 7.4 Remote Over-The-Air (OTA) Client Updates
-WorkGuard includes an integrated silent update engine:
-1. When a new agent build is ready, update [`server/src/updates_manager.js`](file:///d:/employee_monitor/server/src/updates_manager.js).
-2. The Admin Station publishes the update manifest over WebSockets.
-3. Connected client daemons download update payloads, verify checksums, and hot-restart silently without requiring manual workstation visits.
-
----
-
-## 8. Troubleshooting & Diagnostics Playbook
-
-### Issue 1: Client Agent shows "Offline" / Does not discover Admin Station
-- **Cause**: UDP broadcast packets (Port 38281) or TCP requests (Port 3000) are blocked by Windows Firewall or network subnet isolation.
-- **Resolution**:
-  1. Open Windows Defender Firewall on the Admin PC $\rightarrow$ Allow inbound traffic on TCP `3000` and UDP `38281`.
-  2. Run `WorkGuard-Inspector.exe` on the employee machine to diagnose which port is failing.
-  3. If cross-subnet broadcasting is blocked by your router, enter the Admin IP address directly into [`client/config.json`](file:///d:/employee_monitor/client/config.json):
-     ```json
-     {
-       "serverUrl": "http://192.168.1.50:3000"
-     }
-     ```
-
-### Issue 2: Screenshots appear black or blank on certain applications
-- **Cause**: Naive GDI capture engines fail on GPU-accelerated applications (Chrome, Discord, VS Code).
-- **Resolution**: WorkGuard includes native GPU bypass via [`client/bin/screengrab.exe`](file:///d:/employee_monitor/client/bin/screengrab.exe). Ensure `screengrab.exe` is present in the `bin/` directory and not quarantined by third-party antivirus software.
-
-### Issue 3: Port 3000 or Port 38282 is already in use
-- **Cause**: An orphaned background Node.js process is occupying the port.
-- **Resolution**: Double-click [`stop-all-workguard.bat`](file:///d:/employee_monitor/stop-all-workguard.bat) to forcefully clear all listeners and release the ports.
-
-### Issue 4: Employee Workstation disk buffer (`storage_buffer/`) is accumulating files
-- **Cause**: The Admin Station has been offline or unreachable for an extended period.
-- **Resolution**: Once the Admin Station is powered on and reachable, the client's [`offline_queue.js`](file:///d:/employee_monitor/client/src/offline_queue.js) automatically uploads all buffered files chronologically and purges the local buffer folder.
-
-### Issue 5: Forgotten Master Administrator Password
-- **Resolution**:
-  1. Stop the Admin Station.
-  2. Open SQLite database [`server/storage/workguard.db`](file:///d:/employee_monitor/server/storage/workguard.db) using any SQLite editor.
-  3. Execute:
-     ```sql
-     DELETE FROM security_settings WHERE key IN ('admin_password_hash', 'admin_password_salt');
-     ```
-  4. Restart `WorkGuard-Admin.exe`. The application will prompt to set a new Master Password.
-
----
-
-## 9. Official Handover Sign-Off Checklist
-
-Use this checklist during the formal handover meeting between the developer and the designated system owner/administrator:
-
-| # | Handover Milestone | Responsible Party | Status | Date Verified |
-| :---: | :--- | :--- | :---: | :---: |
-| 1 | **Source Code & Git Repository Transferred** | Lead Developer | [x] Verified | 2026-09-25 |
-| 2 | **Packaged Binaries Tested in `dist/`** | IT Administrator | [x] Verified | 2026-09-25 |
-| 3 | **Master Password & Security Keys Initialized** | System Owner | [x] Verified | 2026-09-25 |
-| 4 | **Admin Desktop App Verified on Manager PC** | Department Manager | [x] Verified | 2026-09-25 |
-| 5 | **Client Autostart & Silent Agent Tested** | IT Operations | [x] Verified | 2026-09-25 |
-| 6 | **UDP Auto-Discovery Confirmed Over LAN** | Network Admin | [x] Verified | 2026-09-25 |
-| 7 | **Live 30 FPS Stream & GPU Bypass Validated** | Operations Lead | [x] Verified | 2026-09-25 |
-| 8 | **Privacy Shield & Sensitive Auto-Blur Tested** | Compliance Officer | [x] Verified | 2026-09-25 |
-| 9 | **Automated 20-Day Retention Purge Confirmed** | Storage Admin | [x] Verified | 2026-09-25 |
-| 10 | **Tamper-Evident Audit Chain Integrity Passed** | Security Officer | [x] Verified | 2026-09-25 |
-
-### Handover Authorization & Acceptance
-
-- **Delivered By (Developer / Technical Lead):** ___________________________ &nbsp;&nbsp;&nbsp;&nbsp; **Date:** _______________
-- **Accepted By (System Owner / IT Administrator):** ___________________________ &nbsp;&nbsp;&nbsp;&nbsp; **Date:** _______________
-- **Organization / Department:** ___________________________
-
----
-*End of WorkGuard Usability & Handover Guideline. For technical inquiries, refer to [`ARCHITECTURE_AND_TECH_STACK.md`](file:///d:/employee_monitor/ARCHITECTURE_AND_TECH_STACK.md) and [`USER_MANUAL.md`](file:///d:/employee_monitor/USER_MANUAL.md).*
+*End of WorkGuard User Manual & Testing Guide. For technical architecture details, refer to [`ARCHITECTURE_AND_TECH_STACK.md`](file:///d:/employee_monitor/ARCHITECTURE_AND_TECH_STACK.md).*
