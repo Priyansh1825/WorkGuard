@@ -2,6 +2,15 @@
 
 An offline-first, local area network (LAN) workplace productivity monitoring and endpoint management solution with **zero cloud dependencies**.
 
+
+---
+
+## 📚 Complete Project Documentation
+
+- 📋 **[Production Handover & Usability Guideline](file:///d:/employee_monitor/HANDOVER_AND_USABILITY_GUIDELINE.md)**: Full owner & administrator handover manual, deployment steps, daily management, RBAC, backups, and sign-off checklist.
+- 🏗️ **[Architecture & Tech Stack Deep-Dive](file:///d:/employee_monitor/ARCHITECTURE_AND_TECH_STACK.md)**: Detailed technical specifications, data flows, and engineering choices.
+- 📘 **[User & Installation Manual](file:///d:/employee_monitor/USER_MANUAL.md)**: Step-by-step setup and operation guide for Administrators and Employees.
+
 ---
 
 ## 🌟 Key Software Capabilities

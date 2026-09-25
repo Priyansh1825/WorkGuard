@@ -190,28 +190,39 @@ function generateMockJpeg() {
 }
 
 async function startIsolatedTestServer() {
-  return new Promise((resolve, reject) => {
-    const serverScript = path.join(__dirname, '..', 'test_env', 'test_server.js');
-    testServerProcess = spawn(process.execPath, [serverScript], {
-      env: {
-        ...process.env,
-        PORT: '3050'
-      },
-      stdio: 'pipe'
-    });
-
-    testServerProcess.stdout.on('data', (data) => {
-      const msg = data.toString();
-      if (msg.includes('WorkGuard ISOLATED TEST SANDBOX SERVER') || msg.includes('3050')) {
-        resolve();
-      }
-    });
-
-    testServerProcess.stderr.on('data', () => {});
-    testServerProcess.on('error', reject);
-
-    setTimeout(resolve, 2500);
+  const serverScript = path.join(__dirname, '..', 'test_env', 'test_server.js');
+  testServerProcess = spawn(process.execPath, [serverScript], {
+    env: {
+      ...process.env,
+      PORT: '3050'
+    },
+    stdio: 'pipe'
   });
+
+  testServerProcess.stderr.on('data', (d) => {
+    const s = d.toString();
+    if (!s.includes('ExperimentalWarning')) {
+      console.warn('[TestServer stderr]', s.trim());
+    }
+  });
+
+  // Poll until Port 3050 is responding
+  const startTime = Date.now();
+  while (Date.now() - startTime < 12000) {
+    try {
+      await new Promise((res, rej) => {
+        const req = http.get(`http://${TEST_HOST}:${TEST_PORT}/api/auth/status`, (resp) => {
+          if (resp.statusCode === 200) res();
+          else rej();
+        });
+        req.on('error', rej);
+        req.setTimeout(500, rej);
+      });
+      return; // Server is ready!
+    } catch (e) {
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
 }
 
 function stopIsolatedTestServer() {
